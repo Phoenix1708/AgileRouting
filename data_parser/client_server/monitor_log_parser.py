@@ -2,6 +2,7 @@ import os
 
 import numpy
 from scipy import stats
+from data_parser import client_server
 
 from data_parser.client_server.data_generation import generate_data
 
@@ -14,13 +15,13 @@ def parse_monitor_log(input_files_dir, line_counter):
         return
 
     original_file_dir = input_files_dir
-    parsed_file_dir = original_file_dir + "/parsed_results/"
+    parsed_file_dir = original_file_dir + "parsed_results/"
 
     if not os.path.exists(parsed_file_dir):
         os.makedirs(parsed_file_dir)
 
     files = [f for f in os.listdir(original_file_dir)
-             if f.startswith('logs')]
+             if f.startswith('observer_log')]
 
     for i in xrange(len(files)):
         file_name = files[i]
@@ -48,33 +49,50 @@ def parse_monitor_log(input_files_dir, line_counter):
         # Then we can start reading data from this line afterwards
         need_to_skip_to_the_next = False
 
+        # debug
+        file_path = os.path.abspath(original_file_dir + '/' + file_name)
+
+        with open(file_path) as test_f:
+            print '\nFile length: %s' % (len(test_f.readlines()))
+            print 'Line counter %s\n' % line_counter
+
         # counter to skip to the last
-        with open(os.path.abspath(original_file_dir + '/' + file_name)) as f:
-            # with open(original_file_dir+'/'+file_name) as f:
+        with open(file_path) as f:
+
+            # count = 0  # counter for skip to the line left over last time
+            # while count < line_counter:
+            #     try:
+            #         f.next()
+            #     except StopIteration as e:
+            #         # print 'StopIteration\n' + str(e.message)
+            #         count += 1
+            #     count += 1
+
+            # current_line = 1  # default to 1 to enable the while loop
 
             count = 0  # counter for skip to the line left over last time
-            while count < line_counter:
-                f.next()
-                count += 1
+            if line_counter != 0:
+                for current_line in f:
+                    if count == int(line_counter):
+                        break
+                    count += 1
 
-            current_line = 1  # default to 1 to enable the while loop
-
-            # skip to the line after ObserverReceivedTimestamp
-            while not need_to_skip_to_the_next:
-                current_line = f.readline()
+            # Skip to the line after ObserverReceivedTimestamp
+            for current_line in f:
+                line_counter += 1
                 line_segments = current_line.split("\t")
                 if len(line_segments) < 3:
                     continue
+                if 'ObserverReceivedTimesampt' in line_segments[1]:
+                    break
 
-                if 'ObserverReceivedTimesampt' not in line_segments[1]:
-                    continue
-                else:
-                    need_to_skip_to_the_next = True
-
-            while current_line:
-                # parse current line of the file
-                current_line = f.readline()
+            for current_line in f:
                 line_counter += 1
+
+                # parse current line of the file
+                # current_line = f.readline()
+                # line_counter += 1
+
                 # [metric_id, metric_prop, value, dump]
                 # = current_line.split("\t")
                 line_segments = current_line.split("\t")
@@ -95,29 +113,28 @@ def parse_monitor_log(input_files_dir, line_counter):
                 # save reading of last metric since following reading
                 # will be of a new metric id
                 elif last_metric_id != metric_id:
-                    # check wether any of the 4 properties :
+                    # check whether any of the 4 properties :
                     # vm_id, metric name, metric value, timestamp
                     # is none, which means that the very end of the file
                     # has one record that is only partially written, hence
                     # ignore this record
-                    if not vm_id or not metric_name or not metric_value \
-                       or not timestamps:
-                        continue
 
-                    result_dir_path = parsed_file_dir + sub_folder_name + \
-                                      '/' + vm_id
-                    if not os.path.exists(result_dir_path):
-                        os.makedirs(result_dir_path)
+                    if vm_id and metric_name and metric_value and timestamps:
 
-                    result_file_path = result_dir_path + '/' + \
-                                       metric_name + '.txt'
-                    with open(result_file_path, 'a') as parsed_f:
-                        parsed_f.write(metric_value + '\n')
-                        parsed_f.write(timestamps + '\n')
+                        result_dir_path = parsed_file_dir + sub_folder_name + \
+                                          '/' + vm_id
+                        if not os.path.exists(result_dir_path):
+                            os.makedirs(result_dir_path)
 
-                    # current metric become the last after finish
-                    # processing its value
-                    last_metric_id = metric_id
+                        result_file_path = result_dir_path + '/' + \
+                                           metric_name + '.txt'
+                        with open(result_file_path, 'a') as parsed_f:
+                            parsed_f.write(metric_value + '\n')
+                            parsed_f.write(timestamps + '\n')
+
+                        # current metric become the last after finish
+                        # processing its value
+                        last_metric_id = metric_id
 
                 if metric_prop == "isAbout":
                     vm_id = value.replace("Compute#", "")
@@ -128,7 +145,10 @@ def parse_monitor_log(input_files_dir, line_counter):
                 elif metric_prop == "hasTimeStamp":
                     timestamps = value
 
-    return parsed_file_dir + 'logs/', line_counter
+            # record the position left over
+            # line_counter = f.tell()
+
+    return parsed_file_dir, line_counter
 
 
 def calculate_metrics(data_list):
@@ -160,9 +180,10 @@ def calculate_metrics(data_list):
                                      # rate of each sampling interval for
                                      # a single server
 
+        # sum the arrival rate for each request at the same sampling interval
         for i in xrange(len(data[0][0])):
             one_sampling_interval = 0
-            for j in xrange(len(data[2])):
+            for j in xrange(len(data[2]) - 1):
                 one_sampling_interval += data[7][j][i]
 
             # store overall arrival rate of each sampling interval
@@ -203,27 +224,43 @@ def process_monitor_log(base_dir, observer_addr, line_counter, queue):
     :return: tuple of metrics needed for optimisation
     """
 
+    if not os.path.exists(base_dir):
+        os.makedirs(base_dir)
+
     monitor_log_path = base_dir + 'observer_log.txt'
-
     station_name, observer_ip = observer_addr.split('=')
+    # Flag indicates whether the log contains useful data or not
+    log_has_info = False
 
-    sync_files(host_ip=observer_ip, username='ubuntu',
-               host_file_path=':~/results.txt',
-               pk_path='logs/ec2_private_key', dst_loc=monitor_log_path)
+    while not log_has_info:
 
-    parsed_log_dir, line_counter = parse_monitor_log(monitor_log_path,
-                                                     line_counter)
+        print '\nSynchronising log from observer at: %s' % observer_ip
 
-    result_queue = generate_data(parsed_log_dir, 2)
+        module_path = os.path.dirname(client_server.__file__)
+        private_key_file_path = module_path + '/logs/ec2_private_key'
+
+        sync_files(host_ip=observer_ip, username='ubuntu',
+                   host_file_path='~/results.txt',
+                   pk_path=private_key_file_path, dst_loc=monitor_log_path)
+
+        parsed_log_dir, line_counter = parse_monitor_log(base_dir,
+                                                         int(line_counter))
+
+        result_queue = generate_data(parsed_log_dir, 2)
+
+        # observer log has contain ResponseInfo if the queue if not empty
+        if not result_queue.empty():
+            log_has_info = True
 
     data_list = []
     while not result_queue.empty():
         server_data = result_queue.get()
         data_list.append(server_data)
 
-    metrics_tuple = calculate_metrics(data_list)
+    total_requests, arrival_rate, service_rate = calculate_metrics(data_list)
 
-    queue.put('%s,%s,%s' % (station_name, metrics_tuple, line_counter))
+    queue.put('%s,%s,%s,%s,%s' % (station_name, total_requests, arrival_rate,
+                                  service_rate, line_counter))
 
 
 # if __name__ == '__main__':

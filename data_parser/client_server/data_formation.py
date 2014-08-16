@@ -66,16 +66,17 @@ def format_data(data, period, category_list, cpu_file):
         if data[2][i] and max_time > max(data[2][i]):
             max_time = max(data[2][i])
 
-    n = int(math.floor(((max_time - start_time) // period)))
+    n = int(math.floor(((max_time - start_time) / period)))
+
+    print 'n: %s' % n
 
     for i in xrange(len(data[2]) - 1):
         end_time = start_time
-        last_index = -1
+        # last_index = -1
 
         # index for calculating arrival rate
-        arr_last_index = -1
+        # arr_last_index = -1
 
-        # departure = data[2][i] + data[3][i]*1000
         departure = []
         for j in xrange(len(data[2][i])):
             departure.append(data[2][i][j] + data[3][i][j] * 1000)
@@ -83,34 +84,52 @@ def format_data(data, period, category_list, cpu_file):
         for k in xrange(n):
 
             index = [v[0] for v in enumerate(departure)
-                     if v[1] > (end_time + period)]
+                     if end_time <= v[1] < (end_time + period)]
 
             arr_index = [v[0] for v in enumerate(data[2][i])
-                         if v[1] > (end_time + period)]
+                         if end_time <= v[1] < (end_time + period)]
 
-            if len(index) < 1:
-                # if len(data[5][i]):
-                break
+            response_times = [0]
+            if index:
+                response_times = [data[3][i][idx] for idx in index]
+            data[4][i].append(scipy.mean(response_times))
+            data[5][i].append(len(index)/period*1000)
+            data[6][i].append(len(index))
+            data[7][i].append(len(arr_index))
 
-            else:
-                if arr_index[0] - arr_last_index - 1 == 0:
-                    data[7][i].append(0)
+            data[0][i].append(end_time + period)
+            end_time += period
 
-                if index[0] - last_index - 1 == 0:
-                    data[4][i].append(0)
-                    data[5][i].append(0)
-                    data[6][i].append(0)
-                else:
-                    data[4][i].append(
-                        scipy.mean(data[3][i][last_index+1:index[0]:1]))
-                    data[5][i].append((index[0] - 1 - last_index)/period*1000)
-                    data[6][i].append(index[0] - 1 - last_index)
-                    data[7][i].append(arr_index[0] - 1 - arr_last_index)
-                    last_index = index[0] - 1
-                    arr_last_index = arr_index[0] - 1
 
-                data[0][i].append(end_time + period)
-                end_time += period
+            # if no departure time beyond the end
+            # time of current sampling interval
+            # if len(index) < 1:
+            #     # if len(data[5][i]):
+            #     data[4][i].append(0)
+            #     data[5][i].append(0)
+            #     data[6][i].append(0)
+            #     data[7][i].append(0)
+            #     # break
+            #
+            # else:
+            #     if arr_index[0] - arr_last_index - 1 == 0:
+            #         data[7][i].append(0)
+            #
+            #     if index[0] - last_index - 1 == 0:
+            #         data[4][i].append(0)
+            #         data[5][i].append(0)
+            #         data[6][i].append(0)
+            #     else:
+            #         data[4][i].append(
+            #             scipy.mean(data[3][i][last_index+1:index[0]:1]))
+            #         data[5][i].append((index[0] - 1 - last_index)/period*1000)
+            #         data[6][i].append(index[0] - 1 - last_index)
+            #         data[7][i].append(arr_index[0] - 1 - arr_last_index)
+            #         last_index = index[0] - 1
+            #         arr_last_index = arr_index[0] - 1
+            #
+            #     data[0][i].append(end_time + period)
+            #     end_time += period
 
     max_length = 0
     max_index = 0

@@ -40,6 +40,12 @@ def _generate_data(base_path, queue):
     category_count = 0
     category_list = []
     count = 0
+
+    # No ResponseInfo available in observer log yet
+    if not os.path.exists(response_file):
+        print '%s not exists yet\n' % response_file
+        return
+
     with open(response_file) as f:
         line = f.readline()
         while line:
@@ -65,8 +71,8 @@ def _generate_data(base_path, queue):
             # # python strptime thread safety bug
             # # http://bugs.python.org/issue11108
             # while not date:
-            #     try:
-            #         date = strptime("".join(date_str), '%Y%m%d%H%M%S%f')
+            # try:
+            # date = strptime("".join(date_str), '%Y%m%d%H%M%S%f')
             #     except AttributeError as e:
             #         print "[Debug]: strptime reported AttributeError\n" + \
             #               "Details: %s" % e
@@ -128,9 +134,14 @@ def _generate_data(base_path, queue):
         queue.put(data)
 
 
-def generate_data(source_data_address, num_of_vm):
-    folder = source_data_address
-    all_files = os.listdir(folder)
+def generate_data(logs_folder_path, num_of_vm):
+    """ Generate metric data for each virtual machine monitored
+        by the observer
+    """
+
+    all_dirs = [dp for dp, dn, file_names in os.walk(logs_folder_path)
+                if file_names]
+                # for f in file_names if os.path.splitext(f)[1] == '.txt']
 
     data_generators_manager = ThreadingManager()
 
@@ -140,13 +151,12 @@ def generate_data(source_data_address, num_of_vm):
     time.strptime("30 Nov 00", "%d %b %y")
 
     for num in xrange(num_of_vm):
-        vm = all_files[num]
-        base_path = folder + vm
+        logs_path = all_dirs[num]
 
         data_generators_manager.start_tasks(
             target_func=_generate_data,
             name="monitor_data_generator",
-            para=[base_path]
+            para=[logs_path]
         )
 
     result_queue = data_generators_manager.collect_results()
@@ -155,6 +165,7 @@ def generate_data(source_data_address, num_of_vm):
 
 
 # if __name__ == '__main__':
-#     data = generate_data('logs/2014_0701_1034/parsed_results/'
-#                          'observer_results/', 2)
+#     data = generate_data(
+#         'logs/2014_0701_1034/parsed_results/observer_results/', 2)
+#
 #     print "done"

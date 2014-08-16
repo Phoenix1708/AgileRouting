@@ -11,7 +11,7 @@ scp -i ec2_private_key ubuntu@$OFBIZ_CLIENT_2_IP:~/ofbench-client/results/test/r
 echo "Results directory: " $DIR_NAME
 
 # path is relative to current working directory
-# python ../parse_monitor_log.py $DIR_NAME
+# python ../monitor_log_parser.py $DIR_NAME
 
 python
 echo "Parsing results in directory: " $DIR_NAME

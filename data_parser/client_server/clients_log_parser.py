@@ -1,7 +1,7 @@
 import os
 import time
 from utilities.multi_threading import ThreadingManager
-from utilities.utils import get_env, sync_files
+from utilities.utils import get_ip, sync_files
 
 
 def _parse_client_log(input_files_dir, line_counter):
@@ -142,8 +142,8 @@ def process_client_logs(line_counters):
 
     # observer_ip = get_env('CSPARQL_OBSERVER_IP')
     # TODO: When client number increases the below can be made to a function
-    ofbench_client_1_ip = get_env('OFBIZ_CLIENT_1_IP')
-    ofbench_client_2_ip = get_env('OFBIZ_CLIENT_2_IP')
+    ofbench_client_1_ip = get_ip('OFBIZ_CLIENT_1_IP')
+    ofbench_client_2_ip = get_ip('OFBIZ_CLIENT_2_IP')
 
     clients = [ofbench_client_1_ip, ofbench_client_2_ip]
 
@@ -171,7 +171,7 @@ def process_client_logs(line_counters):
     l = 0
     while not result_queue.empty():
         req_sum, l_counter = result_queue.get().split(',')
-        total_requests += req_sum
+        total_requests += int(req_sum)
         line_counters[l] = l_counter
         l += 1
 

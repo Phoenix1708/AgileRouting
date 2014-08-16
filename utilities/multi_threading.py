@@ -12,6 +12,32 @@ class ThreadingManager(object):
         self.threads_list = []
         self.thread_name_counter = 0
 
+    def start_task(self, target_func, name, para):
+        """
+        Function to create and start a single new threads with input
+        parameters, which includes a synchronised queue to store results from the
+        threads if there are any.
+
+        :param target_func: The content of the thread
+        :param name:        Name the the thread
+        :param para:        Input parameter of threads
+        :return The newly started thread
+        """
+
+        # pass queue to the worker function by default
+        para += (self.queue,)
+
+        new_thread = threading.Thread(
+            target=target_func,
+            name=name+str(name),
+            args=para
+        )
+
+        new_thread.start()
+        self.threads_list.append(new_thread)
+
+        return new_thread
+
     def start_tasks(self, target_func, name, para):
         """
         Function to create and start new threads with input parameters, which

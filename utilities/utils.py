@@ -54,15 +54,23 @@ def get_env(env_var_name):
 
     return env_var
 
+
+def get_ip(host_name):
+    ip = cfg.get('IPs', host_name, None)
+    if not ip:
+        raise GeneralError(msg="No IP configuration found for host name \'%s\'."
+                               % host_name)
+    return ip
+
 # TODO: when the number of servers increases this needs to be more generic
 # e.g adding function to dynamically building the metadata map
-observer_1_ip = get_env('CSPARQL_STATION_1_OBSERVER_IP')
-observer_2_ip = get_env('CSPARQL_STATION_2_OBSERVER_IP')
+observer_1_ip = get_ip('CSPARQL_STATION_1_OBSERVER_IP')
+observer_2_ip = get_ip('CSPARQL_STATION_2_OBSERVER_IP')
 
 station_metadata_map = {
     'region': {
-        'xueshi-station-1': 'eu_west_1',
-        'xueshi-station-2': 'us_east_1'
+        'xueshi-station-1': 'eu-west-1',
+        'xueshi-station-2': 'us-east-1'
     },
 
     'ip': {
@@ -73,7 +81,9 @@ station_metadata_map = {
 
 
 def get_stations():
-    return ['xueshi-station-1', 'xueshi-station-2']
+    # Test
+    return ['xueshi-station-1']
+    # return ['xueshi-station-1', 'xueshi-station-2']
 
 
 def get_station_region():
@@ -89,7 +99,9 @@ def get_station_region():
 
     available_station_region_map = dict()
     for avail_station in available_stations:
-        available_station_region_map.update(station_region_map[avail_station])
+        if station_region_map[avail_station]:
+            available_station_region_map.update(
+                {avail_station: station_region_map[avail_station]})
 
     return available_station_region_map
 
@@ -108,7 +120,8 @@ def get_station_csparql():
 
     available_station_ip_map = dict()
     for avail_station in available_stations:
-        available_station_ip_map.update(station_ip_map[avail_station])
+        available_station_ip_map.update(
+            {avail_station: station_ip_map[avail_station]})
 
     return available_station_ip_map
 
@@ -136,14 +149,15 @@ def sync_files(host_ip, username, host_file_path, pk_path, dst_loc,
         # ssh command used to log into host
         ssh_cmd = '\"ssh -i ' + pk_path + '\"'
         # source and target location of files
-        from_loc = '%s@%s:%s' % (username, host_ip, ':' + host_file_path)
+        from_loc = '%s@%s:%s' % (username, host_ip, host_file_path)
 
         # copy disk file from source to destination
-        rsync_cmd = ["sudo", "/usr/bin/rsync", "-e", ssh_cmd,
+        rsync_cmd = ["/usr/bin/rsync", "-e", ssh_cmd,
                      '-avz', '--sparse', '--progress', from_loc, dst_loc]
         rsync_cmd_str = ' '.join(rsync_cmd)
 
         try:
+            print '[Debug] executing %s' % rsync_cmd_str
             os.system(rsync_cmd_str)
             # successful execution should break the loop from here
             return

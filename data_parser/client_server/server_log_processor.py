@@ -1,7 +1,9 @@
 import os
 import time
+from data_parser import client_server
 
-from data_parser.client_server.parse_monitor_log import process_monitor_log
+from data_parser.client_server.monitor_log_parser import process_monitor_log
+from etc.configuration import cfg
 from utilities.multi_threading import ThreadingManager
 from utilities.utils import get_station_csparql
 
@@ -18,17 +20,28 @@ class ServiceStationMetric:
         self.service_rate = service_rate
 
 
-def process_logs(line_counters):
+def process_server_logs(base_dir, line_counters, queue):
+    """
+
+    :param line_counters:
+    :param queue:           Queue to store results when using in thread
+    :return:
+    """
     # create directory to store logs
-    base_dir = 'logs/' + time.strftime("%Y_%m%d_%H%M") + '/'
-    if not os.path.exists(base_dir):
-        os.makedirs(base_dir)
+
+    # Wait for measurement interval before processing logs (e.g 10 mins)
+    # measurement_interval = cfg.get('Default', 'measurement_interval', 10)
+    # measurement_interval = 5  # test
+    # time.sleep(measurement_interval * 60)
+
+    module_path = os.path.dirname(client_server.__file__)
+    base_dir = module_path + '/logs/' + base_dir + '/'
 
     # retrieve service station and observer mapping
     station_observers = get_station_csparql()
     # retrieve and process the log of each service station with a new threads
     csparql_reader = ThreadingManager()
-    for station_name, observer_ip in station_observers:
+    for station_name, observer_ip in station_observers.iteritems():
         observer_addr = '%s=%s' % (station_name, observer_ip)
 
         csparql_reader.start_tasks(target_func=process_monitor_log,
@@ -40,16 +53,17 @@ def process_logs(line_counters):
 
     service_station_metric_list = []
     while not result_queue.empty():
-        station_name, metrics_tuple, line_counter = \
-            result_queue.get().split(',')
+        station_name, total_requests, arrival_rate, service_rate, line_counter \
+            = result_queue.get().split(',')
 
         # update the current line counter
         line_counters[station_name] = line_counter
-        # get metrics
-        total_requests, arrival_rate, service_rate = metrics_tuple
 
         service_metric = ServiceStationMetric(station_name, total_requests,
                                               arrival_rate, service_rate)
         service_station_metric_list.append(service_metric)
 
-    return service_station_metric_list, line_counters
+    queue.put(service_station_metric_list)
+    queue.put(line_counters)
+
+    # return service_station_metric_list, line_counters
