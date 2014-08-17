@@ -113,7 +113,7 @@ def main():
         print 'arrival_rates: %s' % arrival_rates
         print 'service_rates: %s' % service_rates
         counter += 1
-        time.sleep(3)
+        time.sleep(10)
 
         # TODO: Delay service level agreement, cost budget
 

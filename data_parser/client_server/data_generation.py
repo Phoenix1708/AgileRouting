@@ -4,6 +4,7 @@ import time
 
 from data_parser.client_server.data_formation import format_data
 from utilities.multi_threading import ThreadingManager
+from utilities.utils import print_message
 
 
 def update_data_array(data, x, y, value):
@@ -43,7 +44,7 @@ def _generate_data(base_path, queue):
 
     # No ResponseInfo available in observer log yet
     if not os.path.exists(response_file):
-        print '%s not exists yet\n' % response_file
+        print_message('%s not exists yet\n' % response_file)
         return
 
     with open(response_file) as f:

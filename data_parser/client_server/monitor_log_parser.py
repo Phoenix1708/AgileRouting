@@ -6,7 +6,7 @@ from data_parser import client_server
 
 from data_parser.client_server.data_generation import generate_data
 
-from utilities.utils import sync_files
+from utilities.utils import sync_files, print_message
 
 
 def parse_monitor_log(input_files_dir, line_counter):
@@ -53,8 +53,8 @@ def parse_monitor_log(input_files_dir, line_counter):
         file_path = os.path.abspath(original_file_dir + '/' + file_name)
 
         with open(file_path) as test_f:
-            print '\nFile length: %s' % (len(test_f.readlines()))
-            print 'Line counter %s\n' % line_counter
+            print_message('File length: %s' % (len(test_f.readlines())))
+            print_message('Line counter %s\n' % line_counter)
 
         # counter to skip to the last
         with open(file_path) as f:
@@ -86,6 +86,19 @@ def parse_monitor_log(input_files_dir, line_counter):
                 if 'ObserverReceivedTimesampt' in line_segments[1]:
                     break
 
+            # The csparql log sometimes contain entries with "MonitorDatum"
+            # entries mixed up, hence we explicitly set the program to expect
+            # metrics in the expected order and skip those mixed entries
+            # since it is way to difficult to parse it for external program
+            # like this one and it is actually the job of the csparql
+            # observer to print metrics in a consistent format which on the
+            # other hand is the efficient fix of this issue
+            expected_properties = ['isAbout', 'isProducedBy',
+                                   'hasMonitoredMetric', 'hasValue',
+                                   'hasTimeStamp']
+            expected_prop_counter = 0  # counter to keep track of order of
+                                       # expected properties encountered
+
             for current_line in f:
                 line_counter += 1
 
@@ -110,31 +123,49 @@ def parse_monitor_log(input_files_dir, line_counter):
                 # For the first time
                 if not last_metric_id:
                     last_metric_id = metric_id
+
+                # check the metric property is currently expected
+                # and the metric id is the same one as the one that we'd been
+                # reading other expected properties for
+                # Even the metric property is currently expected the
+                # 'MonitorDatum' ID might be wrong as well
+                if metric_prop != expected_properties[expected_prop_counter] or\
+                   (expected_prop_counter != 0 and metric_id != last_metric_id):
+                    # Skip to the next 'isAbout' line
+                    expected_prop_counter = 0  # expecting the 'isAbout'
+                    continue
+
+                # if the metric property is expected then expect the next one
+                if expected_prop_counter == len(expected_properties) - 1:
+                    expected_prop_counter = 0
+                else:
+                    expected_prop_counter += 1
+
                 # save reading of last metric since following reading
                 # will be of a new metric id
-                elif last_metric_id != metric_id:
+                if last_metric_id != metric_id:
                     # check whether any of the 4 properties :
                     # vm_id, metric name, metric value, timestamp
                     # is none, which means that the very end of the file
                     # has one record that is only partially written, hence
                     # ignore this record
 
-                    if vm_id and metric_name and metric_value and timestamps:
+                    # if vm_id and metric_name and metric_value and timestamps:
 
-                        result_dir_path = parsed_file_dir + sub_folder_name + \
-                                          '/' + vm_id
-                        if not os.path.exists(result_dir_path):
-                            os.makedirs(result_dir_path)
+                    result_dir_path = parsed_file_dir + sub_folder_name + \
+                                      '/' + vm_id
+                    if not os.path.exists(result_dir_path):
+                        os.makedirs(result_dir_path)
 
-                        result_file_path = result_dir_path + '/' + \
-                                           metric_name + '.txt'
-                        with open(result_file_path, 'a') as parsed_f:
-                            parsed_f.write(metric_value + '\n')
-                            parsed_f.write(timestamps + '\n')
+                    result_file_path = result_dir_path + '/' + \
+                                       metric_name + '.txt'
+                    with open(result_file_path, 'a') as parsed_f:
+                        parsed_f.write(metric_value + '\n')
+                        parsed_f.write(timestamps + '\n')
 
-                        # current metric become the last after finish
-                        # processing its value
-                        last_metric_id = metric_id
+                    # current metric become the last after finish
+                    # processing its value
+                    last_metric_id = metric_id
 
                 if metric_prop == "isAbout":
                     vm_id = value.replace("Compute#", "")

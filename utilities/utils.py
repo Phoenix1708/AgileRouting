@@ -2,6 +2,7 @@ import base64
 import hashlib
 import os
 import re
+import threading
 import time
 import urllib
 import urllib2
@@ -157,7 +158,7 @@ def sync_files(host_ip, username, host_file_path, pk_path, dst_loc,
         rsync_cmd_str = ' '.join(rsync_cmd)
 
         try:
-            print '[Debug] executing %s' % rsync_cmd_str
+            print_message('[Debug] executing %s' % rsync_cmd_str)
             os.system(rsync_cmd_str)
             # successful execution should break the loop from here
             return
@@ -171,11 +172,16 @@ def sync_files(host_ip, username, host_file_path, pk_path, dst_loc,
 
             # pause for 2 sec
             time.sleep(2)
-            print 'Re-attempting synchronisation...'
+            print_message('Re-attempting synchronisation...')
             num_retries += 1
 
     if error_msg:
         print error_msg
+
+
+def print_message(msg):
+    thread_id = threading.current_thread().name
+    print '[%s]: %s' % (thread_id, msg)
 
 
 def pythonize_name(name):
