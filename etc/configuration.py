@@ -1,6 +1,8 @@
 import ConfigParser
 import logging
 import logging.handlers
+import os
+import etc
 
 
 class Config(ConfigParser.SafeConfigParser):
@@ -50,8 +52,8 @@ class Config(ConfigParser.SafeConfigParser):
             val = float(default)
         return val
 
-
-cfg = Config('etc/config.ini')
+config_dir = os.path.dirname(etc.__file__)
+cfg = Config(config_dir + '/config.ini')
 
 log = logging.getLogger(__name__)
 

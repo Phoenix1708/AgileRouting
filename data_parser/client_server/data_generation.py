@@ -1,6 +1,8 @@
 import os
 from time import strptime, mktime
 import time
+import numpy
+from scipy import stats
 
 from data_parser.client_server.data_formation import format_data
 from utilities.multi_threading import ThreadingManager
@@ -165,8 +167,59 @@ def generate_data(logs_folder_path, num_of_vm):
     return result_queue
 
 
-# if __name__ == '__main__':
-#     data = generate_data(
-#         'logs/2014_0701_1034/parsed_results/observer_results/', 2)
-#
-#     print "done"
+if __name__ == '__main__':
+    result_queue = generate_data(
+        'logs/2014_0701_1034/parsed_results/observer_results/', 2)
+    data_list = []
+    while not result_queue.empty():
+        server_data = result_queue.get()
+        data_list.append(server_data)
+
+    total_requests = 0
+    service_rate = 0
+
+    for data in data_list:
+        for i in xrange(len(data[2])):
+            total_requests += len(data[2][i])
+
+    # calculate overall arrival rates
+    # the length of data[0][0] is the number of sampling time
+
+    avg_arrival_rate = []  # list that stores the average arrival rate
+                           # of each server
+    for data in data_list:
+        avg_arrival_rates_list = []  # list that stores the average arrival
+                                     # rate of each sampling interval for
+                                     # a single server
+
+        # sum the arrival rate for each request at the same sampling interval
+        for i in xrange(len(data[0][0])):
+            one_sampling_interval = 0
+            for j in xrange(len(data[2]) - 1):
+                one_sampling_interval += data[7][j][i]
+
+            # store overall arrival rate of each sampling interval
+            # in order to estimate service rate with CPU utilisation
+            # which is also collected during each sampling interval
+            avg_arrival_rates_list.append(one_sampling_interval)
+
+        # collect average arrival rate of each sever
+        # for overall arrival rate calculation
+        avg_arrival_rate.append(numpy.mean(avg_arrival_rates_list))
+
+        # estimate service rate regression
+        cpu_utils = data[1][len(data[1])-1]
+
+        slope, intercept, r_value, p_value, std_err = \
+            stats.linregress(avg_arrival_rates_list, cpu_utils)
+
+        # The overall service rate of the service station is the
+        # sum of server rate of each server, since both servers are
+        # serving requests simultaneously
+        service_rate += slope
+
+    # For the similar reason, the arrival rate is the sum of arrival rate of
+    # all servers in the service station.
+    arrival_rate = sum(avg_arrival_rate)
+
+    print "done"

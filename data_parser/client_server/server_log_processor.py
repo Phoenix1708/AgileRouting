@@ -31,8 +31,8 @@ def process_server_logs(base_dir, line_counters, queue):
 
     # Wait for measurement interval before processing logs (e.g 10 mins)
     # measurement_interval = cfg.get('Default', 'measurement_interval', 10)
-    # measurement_interval = 5  # test
-    # time.sleep(measurement_interval * 60)
+    measurement_interval = 5  # test
+    time.sleep(measurement_interval * 60)
 
     module_path = os.path.dirname(client_server.__file__)
     base_dir = module_path + '/logs/' + base_dir + '/'

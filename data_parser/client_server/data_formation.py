@@ -1,6 +1,7 @@
 from __future__ import division
 import math
 import scipy
+from utilities.utils import print_message
 
 
 def remove_data(data, category_list, delete):
@@ -68,7 +69,7 @@ def format_data(data, period, category_list, cpu_file):
 
     n = int(math.floor(((max_time - start_time) / period)))
 
-    print 'n: %s' % n
+    print_message('Number of samples (interval:%s) : %s' % (period, n))
 
     for i in xrange(len(data[2]) - 1):
         end_time = start_time
@@ -77,9 +78,11 @@ def format_data(data, period, category_list, cpu_file):
         # index for calculating arrival rate
         # arr_last_index = -1
 
-        departure = []
-        for j in xrange(len(data[2][i])):
-            departure.append(data[2][i][j] + data[3][i][j] * 1000)
+        departure = [a + r * 1000 for a, r in zip(data[2][i], data[3][i])]
+
+        # departure = []
+        # for j in xrange(len(data[2][i])):
+        #     departure.append(data[2][i][j] + data[3][i][j] * 1000)
 
         for k in xrange(n):
 
@@ -177,7 +180,7 @@ def format_data(data, period, category_list, cpu_file):
 
     for i in xrange(len(data[0][0])):
         indices_found = [v[0] for v in enumerate(cpu_time)
-                         if data[0][0][i] <= v[1] <= data[0][0][i] + period]
+                         if data[0][0][i] <= v[1] < data[0][0][i] + period]
 
         if indices_found:
             mean = scipy.mean([cpu[i] for i in indices_found])
