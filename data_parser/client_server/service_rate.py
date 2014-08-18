@@ -2,7 +2,6 @@ from __future__ import division
 import math
 import numpy
 
-
 # def zeros(row, col=None):
 # if not col:
 # return [0] * row
@@ -55,7 +54,7 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
 
     # Build array with all events
     # first column: time
-    # second column: 0-arrival, 1-departure
+    # second column: 0 - arrival, 1 - departure
     # third column: class
     # fourth column: arrival time (only for departures)
     times_order = cell(4)
@@ -84,7 +83,6 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
     times_order[2] = [times_order[2][idx] for idx in indices]
     times_order[3] = [times_order[3][idx] for idx in indices]
 
-    t = 0
     # STATE
     # each row corresponds to a current job
     # first column:  the class of the job
@@ -92,7 +90,8 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
     # third column: the elapsed service time
     state = numpy.zeros(shape=(0, 3))
 
-    told = t
+    t = 0
+    t_old = t
 
     # ACUM
     # number of service completions observed for each class (row)
@@ -104,7 +103,7 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
     i = 0
     while min(acum[:, 0]) < warm_up:
         t = times_order[0][i]
-        telapsed = t - told
+        time_elapsed = t - t_old
         n = state.shape[0]
 
         # add to each job in process the service time elapsed (divided
@@ -112,7 +111,7 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
 
         r = min(n, num_of_jobs)
         for j in xrange(r):
-            state[j][2] += telapsed / r
+            state[j][2] += time_elapsed / r
 
         if times_order[1][i] == 0:
             next_row = [times_order[2][i], t, 0]
@@ -135,7 +134,7 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
             # [s.remove(s[k]) for s in state]
 
         i += 1
-        told = t
+        t_old = t
 
     mean_service_time = numpy.zeros(shape=(k, num_exp))
 
@@ -147,7 +146,7 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
 
         while sum(acum[:, 0]) < sample_size:
             t = times_order[0][i]
-            telapsed = t - told
+            time_elapsed = t - t_old
             n = state.shape[0]
 
             # add to each job in process the service time elapsed (divided
@@ -156,9 +155,9 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
             r = min(n, num_of_jobs)
             for j in xrange(r):
                 if r <= num_of_cores:
-                    state[j][2] += telapsed / r
+                    state[j][2] += time_elapsed / r
                 else:
-                    state[j][2] += telapsed * num_of_cores / r
+                    state[j][2] += time_elapsed * num_of_cores / r
 
             if times_order[1][i] == 0:
                 next_row = [times_order[2][i], t, 0]
@@ -189,7 +188,7 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
                 # [s.remove(s[k]) for s in state]
 
             i += 1
-            told = t
+            t_old = t
 
         mean_service_time[:, e] = \
             [a2 / a1 for a2, a1 in zip(acum[:, 1], acum[:, 0])]
@@ -220,20 +219,19 @@ def calculate_service_rate(num_of_jobs, num_of_cores, data):
                                                           sample_size, warm_up,
                                                           num_of_jobs,
                                                           num_of_cores)
-
     d = mean_service_time.mean(axis=0)
 
     return d
 
 
-if __name__ == '__main__':
-    #     # a = numpy.array([1, 2, 3])
-    #     # b = numpy.array([4, 5, 6])
-    #     # test = numpy.hstack((a, b))
-    #     # test[1][0] = 10
-    one_list = numpy.ones(shape=10)
-    print one_list
-    print [one * 3 for one in one_list]
+# if __name__ == '__main__':
+#     #     # a = numpy.array([1, 2, 3])
+#     #     # b = numpy.array([4, 5, 6])
+#     #     # test = numpy.hstack((a, b))
+#     #     # test[1][0] = 10
+#     one_list = numpy.ones(shape=10)
+#     print one_list
+#     print [one * 3 for one in one_list]
 
     # np_test = numpy.array([[1.22636426]
     #                        [0.06122791]

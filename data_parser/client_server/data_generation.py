@@ -175,61 +175,61 @@ def generate_data(logs_folder_path, num_of_vm):
     return result_queue
 
 
-def calculate_total_requests(data):
-    requests = 0
-    for i in xrange(len(data[2])):
-        requests += len(data[2][i])
-    return requests
-
-
-def measure_service_rate(data_list, total_user):
-
-    # "vm, number of requests, cpu_core, data" dict list
-    service_rate_para_list = []
-    # collecting relative parameters
-    for vm_data in data_list:
-        vm_name = vm_data[0]
-        data = vm_data[1]
-
-        num_of_requests = calculate_total_requests(data)
-        para_tuple = {'vm_name': vm_name,
-                      'num_of_requests': num_of_requests,
-                      'data': data}
-
-        cpu_core = cfg.get('VMSpec', vm_name)
-        if not cpu_core:
-            print 'No specification configured for VM \'%s\'' % vm_name
-
-        para_tuple.update({'cpu_cores': cpu_core})
-
-        service_rate_para_list.append(para_tuple)
-
-    total_requests = sum([p['num_of_requests'] for p in service_rate_para_list])
-
-    for s_para in service_rate_para_list:
-        # number of users for this vm
-        num_of_user = int(math.ceil(
-            total_user * float(s_para['num_of_requests'] / total_requests)))
-        num_of_cores = s_para['cpu_cores']
-        data = s_para['data']
-
-        mean_service_time = calculate_service_rate(num_of_user, num_of_cores, data)
-
-        print_message('Mean service time of vm %s : %s'
-                      % (s_para['vm_name'], mean_service_time))
-
-
-if __name__ == '__main__':
-    result_queue = generate_data(
-        'logs/examples/2014_0730_1142_70usr_xlarge_20min_2secTT'
-        '/parsed_results/observer_results/', 2)
-
-    server_data_list = []
-    while not result_queue.empty():
-        server_data = result_queue.get()
-        server_data_list.append(server_data)
-
-    measure_service_rate(server_data_list, 70)
+# def calculate_total_requests(data):
+#     requests = 0
+#     for i in xrange(len(data[2])):
+#         requests += len(data[2][i])
+#     return requests
+#
+#
+# def measure_service_rate(data_list, total_user):
+#
+#     # "vm, number of requests, cpu_core, data" dict list
+#     service_rate_para_list = []
+#     # collecting relative parameters
+#     for vm_data in data_list:
+#         vm_name = vm_data[0]
+#         data = vm_data[1]
+#
+#         num_of_requests = calculate_total_requests(data)
+#         para_tuple = {'vm_name': vm_name,
+#                       'num_of_requests': num_of_requests,
+#                       'data': data}
+#
+#         cpu_core = cfg.get('VMSpec', vm_name)
+#         if not cpu_core:
+#             print 'No specification configured for VM \'%s\'' % vm_name
+#
+#         para_tuple.update({'cpu_cores': cpu_core})
+#
+#         service_rate_para_list.append(para_tuple)
+#
+#     total_requests = sum([p['num_of_requests'] for p in service_rate_para_list])
+#
+#     for s_para in service_rate_para_list:
+#         # number of users for this vm
+#         num_of_user = int(math.ceil(
+#             total_user * float(s_para['num_of_requests'] / total_requests)))
+#         num_of_cores = s_para['cpu_cores']
+#         data = s_para['data']
+#
+#         mean_service_time = calculate_service_rate(num_of_user, num_of_cores, data)
+#
+#         print_message('Mean service time of vm %s : %s'
+#                       % (s_para['vm_name'], mean_service_time))
+#
+#
+# if __name__ == '__main__':
+#     result_queue = generate_data(
+#         'logs/examples/2014_0730_1142_70usr_xlarge_20min_2secTT'
+#         '/parsed_results/observer_results/', 2)
+#
+#     server_data_list = []
+#     while not result_queue.empty():
+#         server_data = result_queue.get()
+#         server_data_list.append(server_data)
+#
+#     measure_service_rate(server_data_list, 70)
 
     # total_requests = 0
     # service_rate = 0

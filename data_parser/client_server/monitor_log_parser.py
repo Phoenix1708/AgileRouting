@@ -6,6 +6,8 @@ from scipy import stats
 from data_parser import client_server
 
 from data_parser.client_server.data_generation import generate_data
+from data_parser.client_server.service_rate import calculate_service_rate
+from etc.configuration import cfg
 
 from utilities.utils import sync_files, print_message
 
@@ -66,8 +68,8 @@ def parse_monitor_log(input_files_dir, line_counter):
 
             # count = 0  # counter for skip to the line left over last time
             # while count < line_counter:
-            #     try:
-            #         f.next()
+            # try:
+            # f.next()
             #     except StopIteration as e:
             #         # print 'StopIteration\n' + str(e.message)
             #         count += 1
@@ -102,7 +104,7 @@ def parse_monitor_log(input_files_dir, line_counter):
                                    'hasMonitoredMetric', 'hasValue',
                                    'hasTimeStamp']
             expected_prop_counter = 0  # counter to keep track of order of
-                                       # expected properties encountered
+            # expected properties encountered
 
             for current_line in f:
                 line_counter += 1
@@ -139,8 +141,9 @@ def parse_monitor_log(input_files_dir, line_counter):
                 #  for the current metric ID we skip as well. Except
                 # that when expecting 'isAbout' i.e the first property,
                 # we don't check for metric ID, since it could be a new metric
-                if metric_prop != expected_properties[expected_prop_counter] or\
-                   (expected_prop_counter != 0 and metric_id != last_metric_id):
+                if metric_prop != expected_properties[expected_prop_counter] or \
+                        (
+                                        expected_prop_counter != 0 and metric_id != last_metric_id):
                     # Skip to the next 'isAbout' line
                     expected_prop_counter = 0  # expecting the 'isAbout'
                     skip_counter += 1
@@ -187,12 +190,19 @@ def parse_monitor_log(input_files_dir, line_counter):
                 elif metric_prop == "hasTimeStamp":
                     timestamps = value
 
-            # record the position left over
-            # line_counter = f.tell()
+                    # record the position left over
+                    # line_counter = f.tell()
 
-        print_message('Skipped: %s' % skip_counter)
+        print_message('[Debug] Skipped: %s' % skip_counter)
 
     return parsed_file_dir, line_counter
+
+
+def calculate_total_requests(data):
+    requests = 0
+    for i in xrange(len(data[2])):
+        requests += len(data[2][i])
+    return requests
 
 
 def calculate_metrics(data_list):
@@ -204,25 +214,78 @@ def calculate_metrics(data_list):
     2. Requests arrival rate of the station (lambda)
     3. Service Rate of the station (mu)
 
-    :param data_list:  list of data for each server in current service station
-    :return:           tuple of metric (total_request, lambda, mu)
+    :param data_list:   list of data for each server in current service station
+    :param total_users: Total number of users served by this station
+    :return:            tuple of metric (total_request, lambda, mu)
     """
-    total_requests = 0
-    overall_service_rate = 0
-
-    for data in data_list:
-        for i in xrange(len(data[2])):
-            total_requests += len(data[2][i])
+    # total_requests = 0
+    # overall_service_rate = 0
+    #
+    # for data in data_list:
+    # for i in xrange(len(data[2])):
+    # total_requests += len(data[2][i])
 
     # calculate overall arrival rates
     # the length of data[0][0] is the number of sampling time
 
-    avg_arrival_rate = []  # list that stores the average arrival rate
-                           # of each server
-    for data in data_list:
+    # avg_arrival_rate = []  # list that stores the average arrival rate
+    #                        # of each server
+    # for data in data_list:
+    #     arrival_rates_list = []  # list that stores the average arrival
+    #                              # rate of each sampling interval for
+    #                              # a single server
+    #
+    #     # sum the arrival rate for each request at the same sampling interval
+    #     for i in xrange(len(data[0][0])):
+    #         one_sampling_interval = 0
+    #         for j in xrange(len(data[2]) - 1):
+    #             one_sampling_interval += data[7][j][i]
+    #
+    #         # store overall arrival rate of each sampling interval
+    #         # in order to estimate service rate with CPU utilisation
+    #         # which is also collected during each sampling interval
+    #         arrival_rates_list.append(one_sampling_interval)
+    #
+    #     # estimate service rate regression
+    #     cpu_utils = data[1][len(data[1])-1]
+    #
+    #     print_message('Arrival rates: %s' % arrival_rates_list)
+    #     print_message('CPU utils: %s' % cpu_utils)
+    #
+    #     # FIXME: hard to estimate when the amount of data is small
+    #
+    #     slope, intercept, r_value, p_value, std_err = \
+    #         stats.linregress(arrival_rates_list, cpu_utils)
+    #
+    #     service_rate = math.pow(slope, -1)
+    #     print_message('Service_rate: %s' % service_rate)
+    #
+    #     # collect average arrival rate of each sever
+    #     # for overall arrival rate calculation
+    #     avg_arrival_rate.append(numpy.mean(arrival_rates_list))
+    #
+    #     # The overall service rate of the service station is the
+    #     # sum of server rate of each server, since both servers are
+    #     # serving requests simultaneously
+    #     overall_service_rate += service_rate
+    #
+    # # For the similar reason, the arrival rate is the sum of arrival rate of
+    # # all servers in the service station.
+    # arrival_rate = sum(avg_arrival_rate)
+
+    # "vm, number of requests, cpu_core, data" dict list
+    service_rate_para_list = []
+    # list that stores the average arrival rate of each server
+    avg_arrival_rate = []
+
+    # collecting relative parameters
+    for vm_data in data_list:
+        vm_name = vm_data[0]
+        data = vm_data[1]
+
         arrival_rates_list = []  # list that stores the average arrival
-                                 # rate of each sampling interval for
-                                 # a single server
+        # rate of "each sampling interval" for
+        # a single server
 
         # sum the arrival rate for each request at the same sampling interval
         for i in xrange(len(data[0][0])):
@@ -235,45 +298,42 @@ def calculate_metrics(data_list):
             # which is also collected during each sampling interval
             arrival_rates_list.append(one_sampling_interval)
 
-        # estimate service rate regression
-        cpu_utils = data[1][len(data[1])-1]
-
-        print_message('Arrival rates: %s' % arrival_rates_list)
-        print_message('CPU utils: %s' % cpu_utils)
-
-        # FIXME: hard to estimate when the amount of data is small
-
-        slope, intercept, r_value, p_value, std_err = \
-            stats.linregress(arrival_rates_list, cpu_utils)
-
-        service_rate = math.pow(slope, -1)
-        print_message('Service_rate: %s' % service_rate)
-
         # collect average arrival rate of each sever
         # for overall arrival rate calculation
         avg_arrival_rate.append(numpy.mean(arrival_rates_list))
 
-        # The overall service rate of the service station is the
-        # sum of server rate of each server, since both servers are
-        # serving requests simultaneously
-        overall_service_rate += service_rate
+        # calculate service rate
+        num_of_requests = calculate_total_requests(data)
+        para_tuple = {'vm_name': vm_name, 'num_of_requests': num_of_requests,
+                      'data': data}
 
-    # For the similar reason, the arrival rate is the sum of arrival rate of
-    # all servers in the service station.
+        cpu_core = cfg.get('VMSpec', vm_name)
+        if not cpu_core:
+            print 'No specification configured for VM \'%s\'' % vm_name
+
+        para_tuple.update({'cpu_cores': cpu_core})
+
+        service_rate_para_list.append(para_tuple)
+
+    # calculate total number of requests
+    total_requests = sum([p['num_of_requests'] for p in service_rate_para_list])
+
     arrival_rate = sum(avg_arrival_rate)
 
-    return total_requests, arrival_rate, overall_service_rate
+    return total_requests, arrival_rate, service_rate_para_list
+    # , overall_service_rate
 
 
 def process_monitor_log(base_dir, observer_addr, line_counter, queue):
     """Parse the monitor log and calculate various metric for all servers in
     the service station monitored by the observer
 
-    :param base_dir:
-    :param observer_addr:
-    :param line_counter:
-    :param queue:
-    :return: tuple of metrics needed for optimisation
+    :param base_dir:        Base directory of monitor log
+    :param observer_addr:   Service station name and observer ips pair
+    :param line_counter:    Counter for continuously reading the single log file
+
+    :param queue:           Queue that store metrics needed for optimisation
+                            generated by current thread
     """
 
     if not os.path.exists(base_dir):
@@ -297,7 +357,6 @@ def process_monitor_log(base_dir, observer_addr, line_counter, queue):
 
         parsed_log_dir, line_counter = parse_monitor_log(base_dir,
                                                          int(line_counter))
-
         result_queue = generate_data(parsed_log_dir, 2)
 
         # observer log has contain ResponseInfo if the queue if not empty
@@ -309,15 +368,21 @@ def process_monitor_log(base_dir, observer_addr, line_counter, queue):
         server_data = result_queue.get()
         data_list.append(server_data)
 
-    total_requests, arrival_rate, service_rate = calculate_metrics(data_list)
+    total_requests, arrival_rate, service_rate_para_list \
+        = calculate_metrics(data_list)
 
-    queue.put('%s,%s,%s,%s,%s' % (station_name, total_requests, arrival_rate,
-                                  service_rate, line_counter))
+    result_dict = {'station_name', station_name,
+                   'total_requests', total_requests,
+                   'arrival_rate', arrival_rate,
+                   'service_rate_para_list', service_rate_para_list,
+                   'line_counter', line_counter}
+
+    queue.put(result_dict)
 
 
-if __name__ == '__main__':
-    parse_monitor_log('logs/2014_0817_1556', 0)
-    # for i in xrange(len(sys.argv)):
-    # print sys.argv[i]
-    # process_monitor_log(sys.argv[1], 0)
-    print 'done'
+    # if __name__ == '__main__':
+    # parse_monitor_log('logs/2014_0817_1556', 0)
+    #     # for i in xrange(len(sys.argv)):
+    #     # print sys.argv[i]
+    #     # process_monitor_log(sys.argv[1], 0)
+    #     print 'done'

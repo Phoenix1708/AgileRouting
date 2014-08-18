@@ -39,7 +39,7 @@ def main():
         csparql_log_parser.start_task(
             target_func=process_server_logs,
             name="server_log_processor",
-            para=[log_base_dir, line_counters]
+            para=[log_base_dir, line_counters, 20]
         )
 
         # Begin gathering info of the amount of data
@@ -57,7 +57,7 @@ def main():
         # data_out = elb_data_queue.get()
 
         csparql_log_queue = csparql_log_parser.collect_results()
-        service_station_metric_list = csparql_log_queue.get()
+        (service_station_metric_list, total_request) = csparql_log_queue.get()
         line_counters = csparql_log_queue.get()
 
         # Begin reading logs from OFBench client.
@@ -67,7 +67,7 @@ def main():
         """Preparing optimisation parameters"""
         # Calculate The "average amount of data involved in each request" for
         # each service station and the "total number of requests"
-        total_request = 0
+
         # These 2 dictionary stores the average data send and received per
         # request sent and received by *each service station*. Hence the
         # length of the dictionary should be equals to the number of service
@@ -83,10 +83,12 @@ def main():
             station_name = service_station_metric.station_name
             arrival_rate = service_station_metric.arrival_rate
             service_rate = service_station_metric.service_rate
+
             requests = service_station_metric.total_requests
 
-            # total requests from clients
-            total_request += int(requests)
+            print 'total requests for station %s: %s' \
+                  % (station_name, requests)
+
             # arrival_rate and service_rate
             arrival_rates.update({station_name: arrival_rate})
             service_rates.update({station_name: service_rate})
@@ -107,7 +109,7 @@ def main():
             # avg_data_out_per_reqs.update({station_name: avg_data_out_per_req})
 
         # For testing purpose
-        print 'total_request: %s' % total_request
+        print '\ntotal_request: %s' % total_request
         print 'avg_data_in_per_reqs: %s' % avg_data_in_per_reqs
         print 'avg_data_out_per_reqs: %s' % avg_data_out_per_reqs
         print 'arrival_rates: %s' % arrival_rates
