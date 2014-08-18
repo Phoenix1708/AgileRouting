@@ -1,0 +1,19 @@
+OS: Linux,Version: 3.2.0-36-virtual,amd64,Available processors (cores): 4,Free memory: 109,509,Allocated memory: 114,304,Max memory: 1,696,704,Total free memory: 1,691,909,File system root: /,Total space (bytes): 8455118848,Free space (bytes): 3754860544,Usable space (bytes): 3325366272,
+Loading configuration...
+Configuration loaded.
+Steady-state will last 1200000 ms
+This client is not master, this is 10.106.12.177, master is 109.231.69.252
+Waiting for dispatcher...
+Dispatcher is ready (signal: 10).
+Warm up initiated at 1406714946656
+warmup,1406714946656
+ Starting warmup...
+Waiting for warmup completion signal...
+Warm up completed in 454523ms
+Steady state initiated at 1406715401179
+steady,1406715401179
+Stable run completed in 1200000ms
+Cooldown initiated at 1406716601179
+cooldown,1406716601179
+Cooldown completed in 9049ms
+end,1406716610228

@@ -1,0 +1,684 @@
+2014,07,01,09,26,32,434,http-bio-0.0.0.0-8080-exec-9,productCategoryList,Request Done,0.781
+1404206818646
+2014,07,01,09,26,17,245,http-bio-0.0.0.0-8443-exec-36,login,Request Done,0.585
+1404206818628
+2014,07,01,09,25,11,269,http-bio-0.0.0.0-8443-exec-31,createcustomer,Request Done,5.924
+1404206818505
+2014,07,01,09,26,14,676,http-bio-0.0.0.0-8080-exec-3,main,Request Done,0.974
+1404206818626
+2014,07,01,09,26,51,632,http-bio-0.0.0.0-8080-exec-25,addtocartbulk,Request Done,6.33
+1404206818662
+2014,07,01,09,25,15,698,http-bio-0.0.0.0-8443-exec-7,createcustomer,Request Done,2.351
+1404206818577
+2014,07,01,09,26,42,249,http-bio-0.0.0.0-8080-exec-4,main,Request Done,0.597
+1404206818652
+2014,07,01,09,26,20,939,http-bio-0.0.0.0-8080-exec-25,main,Request Done,1.345
+1404206818636
+2014,07,01,09,26,29,419,http-bio-0.0.0.0-8080-exec-15,main,Request Done,0.57
+1404206818645
+2014,07,01,09,25,11,210,http-bio-0.0.0.0-8443-exec-18,createcustomer,Request Done,11.038
+1404206818504
+2014,07,01,09,26,14,215,http-bio-0.0.0.0-8080-exec-23,main,Request Done,1.059
+1404206818625
+2014,07,01,09,25,13,059,http-bio-0.0.0.0-8443-exec-18,logout,Request Done,1.07
+1404206818552
+2014,07,01,09,26,20,408,http-bio-0.0.0.0-8080-exec-4,main,Request Done,1.437
+1404206818635
+2014,07,01,09,26,40,688,http-bio-0.0.0.0-8080-exec-15,main,Request Done,3.091
+1404206818651
+2014,07,01,09,25,13,055,http-bio-0.0.0.0-8443-exec-7,logout,Request Done,1.515
+1404206818551
+2014,07,01,09,26,28,951,http-bio-0.0.0.0-8080-exec-30,main,Request Done,1.903
+1404206818645
+2014,07,01,09,25,11,204,http-bio-0.0.0.0-8443-exec-7,createcustomer,Request Done,9.875
+1404206818503
+2014,07,01,09,26,52,999,http-bio-0.0.0.0-8080-exec-25,main,Request Done,0.714
+1404206818663
+2014,07,01,09,26,06,314,http-bio-0.0.0.0-8080-exec-1,main,Request Done,2.625
+1404206818611
+2014,07,01,09,25,13,056,http-bio-0.0.0.0-8443-exec-23,logout,Request Done,1.433
+1404206818552
+2014,07,01,09,26,24,438,http-bio-0.0.0.0-8443-exec-25,login,Request Done,0.348
+1404206818642
+2014,07,01,09,26,19,363,http-bio-0.0.0.0-8080-exec-12,main,Request Done,1.522
+1404206818634
+2014,07,01,09,25,13,051,http-bio-0.0.0.0-8443-exec-2,logout,Request Done,1.143
+1404206818551
+2014,07,01,09,26,38,171,http-bio-0.0.0.0-8080-exec-31,productCategoryList,Request Done,0.616
+1404206818651
+2014,07,01,09,26,25,595,http-bio-0.0.0.0-8443-exec-28,checkLogin,Request Done,1.114
+1404206818643
+2014,07,01,09,25,11,194,http-bio-0.0.0.0-8443-exec-2,createcustomer,Request Done,4.217
+1404206818503
+2014,07,01,09,26,52,957,http-bio-0.0.0.0-8443-exec-15,checkoutoptions,Request Done,0.658
+1404206818663
+2014,07,01,09,25,50,673,http-bio-0.0.0.0-8080-exec-20,main,Request Done,1.105
+1404206818605
+2014,07,01,09,26,18,814,http-bio-0.0.0.0-8443-exec-22,checkLogin,Request Done,1.516
+1404206818634
+2014,07,01,09,26,23,286,http-bio-0.0.0.0-8443-exec-8,checkLogin,Request Done,0.057
+1404206818641
+2014,07,01,09,26,36,700,http-bio-0.0.0.0-8080-exec-9,additem,Request Done,1.21
+1404206818649
+2014,07,01,09,25,12,417,http-bio-0.0.0.0-8443-exec-31,getAssociatedStateList,Request Done,0.13
+1404206818532
+2014,07,01,09,25,11,114,http-bio-0.0.0.0-8443-exec-29,newcustomer,Request Done,0.729
+1404206818502
+2014,07,01,09,26,52,114,http-bio-0.0.0.0-8080-exec-25,productCategoryList,Request Done,0.131
+1404206818662
+2014,07,01,09,25,43,498,http-bio-0.0.0.0-8080-exec-38,main,Request Done,4.177
+1404206818603
+2014,07,01,09,26,21,451,http-bio-0.0.0.0-8443-exec-36,logout,Request Done,0.08
+1404206818637
+2014,07,01,09,26,34,669,http-bio-0.0.0.0-8080-exec-30,additem,Request Done,1.355
+1404206818647
+2014,07,01,09,26,17,529,http-bio-0.0.0.0-8080-exec-12,main,Request Done,3.03
+1404206818629
+2014,07,01,09,26,16,263,http-bio-0.0.0.0-8443-exec-25,checkLogin,Request Done,0.192
+1404206818627
+2014,07,01,09,25,11,341,http-bio-0.0.0.0-8443-exec-23,getAssociatedStateList,Request Done,0.091
+1404206818514
+2014,07,01,09,26,51,996,http-bio-0.0.0.0-8080-exec-15,main,Request Done,1.974
+1404206818662
+2014,07,01,09,26,20,952,http-bio-0.0.0.0-8080-exec-12,main,Request Done,1.197
+1404206818636
+2014,07,01,09,25,16,700,http-bio-0.0.0.0-8443-exec-7,logout,Request Done,0.182
+1404206818590
+2014,07,01,09,26,43,962,http-bio-0.0.0.0-8080-exec-4,quickadd,Request Done,0.719
+1404206818652
+2014,07,01,09,27,08,941,http-bio-0.0.0.0-8443-exec-15,checkoutoptions,Request Done,2.637
+1404206838438
+2014,07,01,09,27,05,547,http-bio-0.0.0.0-8443-exec-26,login,Request Done,0.255
+1404206838413
+2014,07,01,09,27,05,050,http-bio-0.0.0.0-8080-exec-31,main,Request Done,3.766
+1404206838409
+2014,07,01,09,27,08,719,http-bio-0.0.0.0-8080-exec-36,main,Request Done,2.071
+1404206838438
+2014,07,01,09,27,02,426,http-bio-0.0.0.0-8443-exec-10,checkLogin,Request Done,0.252
+1404206838401
+2014,07,01,09,27,06,308,http-bio-0.0.0.0-8443-exec-26,checkLogin,Request Done,0.73
+1404206838414
+2014,07,01,09,27,08,848,http-bio-0.0.0.0-8080-exec-32,main,Request Done,1.931
+1404206838438
+2014,07,01,09,26,54,707,http-bio-0.0.0.0-8443-exec-26,checkoutoptions,Request Done,1.032
+1404206838398
+2014,07,01,09,27,04,439,http-bio-0.0.0.0-8443-exec-26,checkoutoptions,Request Done,3.154
+1404206838409
+2014,07,01,09,27,08,430,http-bio-0.0.0.0-8080-exec-18,quickadd,Request Done,1.875
+1404206838429
+2014,07,01,09,26,55,944,http-bio-0.0.0.0-8080-exec-31,main,Request Done,0.58
+1404206838398
+2014,07,01,09,27,24,089,http-bio-0.0.0.0-8080-exec-26,main,Request Done,1.29
+1404206848424
+2014,07,01,09,27,17,038,http-bio-0.0.0.0-8080-exec-36,main,Request Done,4.375
+1404206848408
+2014,07,01,09,27,15,547,http-bio-0.0.0.0-8443-exec-34,contactus,Request Done,3.143
+1404206848399
+2014,07,01,09,27,17,880,http-bio-0.0.0.0-8080-exec-18,main,Request Done,1.427
+1404206848411
+2014,07,01,09,27,17,295,http-bio-0.0.0.0-8443-exec-33,contactsubmit,Request Done,1.067
+1404206848409
+2014,07,01,09,27,24,139,http-bio-0.0.0.0-8080-exec-16,main,Request Done,1.343
+1404206848424
+2014,07,01,09,27,16,297,http-bio-0.0.0.0-8080-exec-18,addtocartbulk,Request Done,4.923
+1404206848406
+2014,07,01,09,27,22,763,http-bio-0.0.0.0-8080-exec-40,productCategoryList,Request Done,1.37
+1404206848423
+2014,07,01,09,27,30,654,http-bio-0.0.0.0-8443-exec-37,checkLogin,Request Done,0.132
+1404206858457
+2014,07,01,09,27,26,780,http-bio-0.0.0.0-8443-exec-28,logout,Request Done,0.066
+1404206858402
+2014,07,01,09,27,29,183,http-bio-0.0.0.0-8443-exec-21,login,Request Done,1.303
+1404206858444
+2014,07,01,09,27,27,519,http-bio-0.0.0.0-8080-exec-27,main,Request Done,4.0
+1404206858403
+2014,07,01,09,27,30,483,http-bio-0.0.0.0-8443-exec-12,checkLogin,Request Done,1.262
+1404206858446
+2014,07,01,09,27,25,297,http-bio-0.0.0.0-8443-exec-10,checkLogin,Request Done,0.281
+1404206858401
+2014,07,01,09,27,29,758,http-bio-0.0.0.0-8080-exec-16,main,Request Done,1.319
+1404206858444
+2014,07,01,09,27,28,136,http-bio-0.0.0.0-8080-exec-16,main,Request Done,1.273
+1404206858403
+2014,07,01,09,27,40,683,http-bio-0.0.0.0-8443-exec-17,logout,Request Done,0.119
+1404206863425
+2014,07,01,09,27,41,278,http-bio-0.0.0.0-8080-exec-16,main,Request Done,0.915
+1404206863426
+2014,07,01,09,27,37,403,http-bio-0.0.0.0-8443-exec-14,login,Request Done,0.23
+1404206863412
+2014,07,01,09,27,38,511,http-bio-0.0.0.0-8443-exec-21,checkLogin,Request Done,1.075
+1404206863417
+2014,07,01,09,27,37,994,http-bio-0.0.0.0-8080-exec-29,main,Request Done,2.274
+1404206863413
+2014,07,01,09,27,35,964,http-bio-0.0.0.0-8080-exec-10,main,Request Done,1.885
+1404206863410
+2014,07,01,09,27,50,489,http-bio-0.0.0.0-8080-exec-10,main,Request Done,4.585
+1404206883419
+2014,07,01,09,27,52,516,http-bio-0.0.0.0-8080-exec-28,additem,Request Done,1.083
+1404206883420
+2014,07,01,09,27,41,871,http-bio-0.0.0.0-8080-exec-10,quickadd,Request Done,0.582
+1404206883400
+2014,07,01,09,27,50,685,http-bio-0.0.0.0-8443-exec-15,processorder,Request Done,41.049
+1404206883419
+2014,07,01,09,27,56,043,http-bio-0.0.0.0-8080-exec-16,main,Request Done,0.532
+1404206883421
+2014,07,01,09,27,50,292,http-bio-0.0.0.0-8080-exec-29,additem,Request Done,2.758
+1404206883419
+2014,07,01,09,27,53,948,http-bio-0.0.0.0-8443-exec-11,logout,Request Done,0.065
+1404206883421
+2014,07,01,09,27,52,462,http-bio-0.0.0.0-8080-exec-4,main,Request Done,1.028
+1404206883420
+2014,07,01,09,28,08,887,http-bio-0.0.0.0-8443-exec-1,checkoutoptions,Request Done,0.75
+1404206898408
+2014,07,01,09,28,03,139,http-bio-0.0.0.0-8080-exec-30,main,Request Done,1.425
+1404206898403
+2014,07,01,09,28,01,135,http-bio-0.0.0.0-8443-exec-32,checkoutoptions,Request Done,1.108
+1404206898400
+2014,07,01,09,28,06,205,http-bio-0.0.0.0-8080-exec-10,productCategoryList,Request Done,0.23
+1404206898405
+2014,07,01,09,28,05,380,http-bio-0.0.0.0-8443-exec-39,checkoutoptions,Request Done,0.814
+1404206898405
+2014,07,01,09,28,07,508,http-bio-0.0.0.0-8080-exec-31,main,Request Done,0.508
+1404206898406
+2014,07,01,09,28,02,077,http-bio-0.0.0.0-8443-exec-32,checkoutoptions,Request Done,0.643
+1404206898403
+2014,07,01,09,28,16,824,http-bio-0.0.0.0-8080-exec-30,additem,Request Done,3.418
+1404206903423
+2014,07,01,09,28,20,399,http-bio-0.0.0.0-8080-exec-22,main,Request Done,0.595
+1404206903425
+2014,07,01,09,28,18,845,http-bio-0.0.0.0-8080-exec-38,main,Request Done,0.461
+1404206903424
+2014,07,01,09,28,18,301,http-bio-0.0.0.0-8080-exec-35,additem,Request Done,0.959
+1404206903424
+2014,07,01,09,28,19,698,http-bio-0.0.0.0-8443-exec-26,checkLogin,Request Done,0.16
+1404206903425
+2014,07,01,09,28,22,594,http-bio-0.0.0.0-8443-exec-26,checkLogin,Request Done,1.235
+1404206913422
+2014,07,01,09,28,21,326,http-bio-0.0.0.0-8443-exec-38,login,Request Done,0.661
+1404206913400
+2014,07,01,09,28,22,248,http-bio-0.0.0.0-8080-exec-35,main,Request Done,1.111
+1404206913416
+2014,07,01,09,28,22,985,http-bio-0.0.0.0-8080-exec-13,main,Request Done,0.835
+1404206913440
+2014,07,01,09,28,31,512,http-bio-0.0.0.0-8443-exec-38,checkLogin,Request Done,4.722
+1404206913510
+2014,07,01,09,28,24,055,http-bio-0.0.0.0-8080-exec-3,main,Request Done,0.891
+1404206913457
+2014,07,01,09,28,31,271,http-bio-0.0.0.0-8080-exec-13,main,Request Done,2.183
+1404206913510
+2014,07,01,09,28,31,275,http-bio-0.0.0.0-8080-exec-8,main,Request Done,6.637
+1404206913510
+2014,07,01,09,28,25,528,http-bio-0.0.0.0-8443-exec-22,checkLogin,Request Done,0.918
+1404206913482
+2014,07,01,09,28,31,265,http-bio-0.0.0.0-8080-exec-35,main,Request Done,5.249
+1404206913509
+2014,07,01,09,28,26,754,http-bio-0.0.0.0-8443-exec-5,login,Request Done,0.269
+1404206913483
+2014,07,01,09,28,33,388,http-bio-0.0.0.0-8080-exec-3,additem,Request Done,1.623
+1404206918403
+2014,07,01,09,28,32,435,http-bio-0.0.0.0-8080-exec-24,main,Request Done,1.774
+1404206918402
+2014,07,01,09,28,34,646,http-bio-0.0.0.0-8080-exec-3,main,Request Done,1.212
+1404206918406
+2014,07,01,09,28,40,207,http-bio-0.0.0.0-8443-exec-6,checkoutoptions,Request Done,1.829
+1404206923431
+2014,07,01,09,28,40,405,http-bio-0.0.0.0-8080-exec-8,keywordsearch,Request Done,1.447
+1404206923432
+2014,07,01,09,28,40,376,http-bio-0.0.0.0-8443-exec-32,processorder,Request Done,31.346
+1404206923432
+2014,07,01,09,28,36,640,http-bio-0.0.0.0-8080-exec-8,additem,Request Done,1.983
+1404206923403
+2014,07,01,09,28,42,811,http-bio-0.0.0.0-8080-exec-35,main,Request Done,4.575
+1404206933402
+2014,07,01,09,28,43,834,http-bio-0.0.0.0-8443-exec-6,orderstatus,Request Done,1.571
+1404206933413
+2014,07,01,09,28,45,158,http-bio-0.0.0.0-8080-exec-18,keywordsearch,Request Done,0.679
+1404206933417
+2014,07,01,09,28,48,370,http-bio-0.0.0.0-8443-exec-17,checkLogin,Request Done,0.958
+1404206933427
+2014,07,01,09,28,42,680,http-bio-0.0.0.0-8443-exec-29,checkoutoptions,Request Done,1.926
+1404206933401
+2014,07,01,09,28,43,712,http-bio-0.0.0.0-8443-exec-32,checkLogin,Request Done,0.22
+1404206933409
+2014,07,01,09,28,45,146,http-bio-0.0.0.0-8443-exec-6,login,Request Done,0.228
+1404206933414
+2014,07,01,09,28,48,325,http-bio-0.0.0.0-8443-exec-7,checkoutoptions,Request Done,1.099
+1404206933421
+2014,07,01,09,28,42,085,http-bio-0.0.0.0-8443-exec-32,orderhistory,Request Done,1.365
+1404206933401
+2014,07,01,09,28,44,273,http-bio-0.0.0.0-8443-exec-17,checkoutoptions,Request Done,0.917
+1404206933414
+2014,07,01,09,28,43,707,http-bio-0.0.0.0-8443-exec-25,checkLogin,Request Done,0.345
+1404206933409
+2014,07,01,09,28,48,194,http-bio-0.0.0.0-8080-exec-8,main,Request Done,0.989
+1404206933421
+2014,07,01,09,28,43,660,http-bio-0.0.0.0-8080-exec-24,additem,Request Done,2.732
+1404206933403
+2014,07,01,09,28,47,379,http-bio-0.0.0.0-8443-exec-6,login,Request Done,0.267
+1404206933419
+2014,07,01,09,28,46,911,http-bio-0.0.0.0-8080-exec-18,main,Request Done,0.76
+1404206933418
+2014,07,01,09,28,43,257,http-bio-0.0.0.0-8080-exec-18,main,Request Done,1.947
+1404206933402
+2014,07,01,09,28,45,863,http-bio-0.0.0.0-8443-exec-25,checkLogin,Request Done,0.685
+1404206933417
+2014,07,01,09,28,42,863,http-bio-0.0.0.0-8080-exec-19,main,Request Done,2.335
+1404206933402
+2014,07,01,09,28,54,650,http-bio-0.0.0.0-8080-exec-29,view,Request Done,0.941
+1404206943404
+2014,07,01,09,28,56,362,http-bio-0.0.0.0-8080-exec-33,quickadd,Request Done,0.408
+1404206943429
+2014,07,01,09,28,53,963,http-bio-0.0.0.0-8080-exec-13,additem,Request Done,3.502
+1404206943403
+2014,07,01,09,28,55,229,http-bio-0.0.0.0-8443-exec-32,logout,Request Done,0.071
+1404206943405
+2014,07,01,09,29,00,791,http-bio-0.0.0.0-8443-exec-18,logout,Request Done,0.065
+1404206943466
+2014,07,01,09,28,54,659,http-bio-0.0.0.0-8080-exec-8,main,Request Done,2.708
+1404206943404
+2014,07,01,09,28,59,674,http-bio-0.0.0.0-8080-exec-4,additem,Request Done,1.552
+1404206943432
+2014,07,01,09,29,01,484,http-bio-0.0.0.0-8080-exec-28,main,Request Done,0.652
+1404206943479
+2014,07,01,09,28,55,237,http-bio-0.0.0.0-8080-exec-13,keywordsearch,Request Done,0.581
+1404206943405
+2014,07,01,09,28,54,661,http-bio-0.0.0.0-8080-exec-33,main,Request Done,3.512
+1404206943404
+2014,07,01,09,28,59,766,http-bio-0.0.0.0-8080-exec-13,main,Request Done,0.791
+1404206943432
+2014,07,01,09,29,05,953,http-bio-0.0.0.0-8080-exec-28,main,Request Done,4.41
+1404206948424
+2014,07,01,09,29,05,566,http-bio-0.0.0.0-8080-exec-29,addtocartbulk,Request Done,5.338
+1404206948423
+2014,07,01,09,29,06,480,http-bio-0.0.0.0-8443-exec-32,checkoutoptions,Request Done,0.547
+1404206948439
+2014,07,01,09,29,05,866,http-bio-0.0.0.0-8080-exec-2,additem,Request Done,3.72
+1404206948424
+2014,07,01,09,29,08,100,http-bio-0.0.0.0-8080-exec-29,additem,Request Done,1.076
+1404206953404
+2014,07,01,09,29,09,935,http-bio-0.0.0.0-8443-exec-32,login,Request Done,0.521
+1404206953413
+2014,07,01,09,29,08,243,http-bio-0.0.0.0-8443-exec-25,logout,Request Done,0.088
+1404206953404
+2014,07,01,09,29,09,124,http-bio-0.0.0.0-8443-exec-32,checkoutoptions,Request Done,1.044
+1404206953410
+2014,07,01,09,29,09,902,http-bio-0.0.0.0-8443-exec-3,logout,Request Done,0.078
+1404206953413
+2014,07,01,09,29,08,892,http-bio-0.0.0.0-8443-exec-25,checkLogin,Request Done,0.191
+1404206953409
+2014,07,01,09,29,11,487,http-bio-0.0.0.0-8080-exec-29,main,Request Done,1.542
+1404206963402
+2014,07,01,09,29,17,787,http-bio-0.0.0.0-8080-exec-29,additem,Request Done,3.885
+1404206963411
+2014,07,01,09,29,20,378,http-bio-0.0.0.0-8080-exec-29,additem,Request Done,1.914
+1404206963415
+2014,07,01,09,29,13,267,http-bio-0.0.0.0-8080-exec-29,main,Request Done,0.895
+1404206963404
+2014,07,01,09,29,20,248,http-bio-0.0.0.0-8443-exec-10,checkLogin,Request Done,0.251
+1404206963415
+2014,07,01,09,29,11,569,http-bio-0.0.0.0-8443-exec-32,checkLogin,Request Done,1.602
+1404206963402
+2014,07,01,09,29,18,609,http-bio-0.0.0.0-8080-exec-32,main,Request Done,1.47
+1404206963412
+2014,07,01,09,29,11,485,http-bio-0.0.0.0-8080-exec-9,main,Request Done,1.216
+1404206963402
+2014,07,01,09,29,21,394,http-bio-0.0.0.0-8443-exec-39,checkoutoptions,Request Done,0.6
+1404206963416
+2014,07,01,09,29,17,784,http-bio-0.0.0.0-8080-exec-24,main,Request Done,2.793
+1404206963410
+2014,07,01,09,29,19,251,http-bio-0.0.0.0-8080-exec-24,main,Request Done,1.237
+1404206963414
+2014,07,01,09,29,13,166,http-bio-0.0.0.0-8080-exec-4,main,Request Done,1.347
+1404206963404
+2014,07,01,09,29,23,253,http-bio-0.0.0.0-8443-exec-40,processorder,Request Done,29.22
+1404206973402
+2014,07,01,09,29,27,953,http-bio-0.0.0.0-8443-exec-33,login,Request Done,0.285
+1404206973405
+2014,07,01,09,29,30,111,http-bio-0.0.0.0-8443-exec-40,orderstatus,Request Done,0.537
+1404206973406
+2014,07,01,09,29,27,436,http-bio-0.0.0.0-8080-exec-29,main,Request Done,1.893
+1404206973404
+2014,07,01,09,29,28,785,http-bio-0.0.0.0-8443-exec-8,orderhistory,Request Done,0.328
+1404206973405
+2014,07,01,09,29,28,484,http-bio-0.0.0.0-8443-exec-40,checkLogin,Request Done,0.942
+1404206973405
+2014,07,01,09,29,26,432,http-bio-0.0.0.0-8443-exec-18,checkLogin,Request Done,0.127
+1404206973404
+2014,07,01,09,29,22,411,http-bio-0.0.0.0-8080-exec-1,main,Request Done,0.856
+1404206973401
+2014,07,01,09,29,30,875,http-bio-0.0.0.0-8443-exec-33,checkoutoptions,Request Done,1.359
+1404206973409
+2014,07,01,09,29,27,507,http-bio-0.0.0.0-8443-exec-36,login,Request Done,0.304
+1404206973404
+2014,07,01,09,29,28,878,http-bio-0.0.0.0-8443-exec-22,checkLogin,Request Done,0.882
+1404206973405
+2014,07,01,09,29,27,042,http-bio-0.0.0.0-8443-exec-40,checkoutoptions,Request Done,0.954
+1404206973404
+2014,07,01,09,29,32,316,http-bio-0.0.0.0-8080-exec-14,main,Request Done,1.271
+1404206983411
+2014,07,01,09,29,34,292,http-bio-0.0.0.0-8080-exec-22,quickadd,Request Done,0.468
+1404206983411
+2014,07,01,09,29,32,551,http-bio-0.0.0.0-8443-exec-40,checkoutoptions,Request Done,0.95
+1404206983411
+2014,07,01,09,29,32,295,http-bio-0.0.0.0-8443-exec-32,logout,Request Done,0.077
+1404206983411
+2014,07,01,09,29,34,814,http-bio-0.0.0.0-8080-exec-14,quickadd,Request Done,0.382
+1404206983412
+2014,07,01,09,29,33,186,http-bio-0.0.0.0-8080-exec-6,main,Request Done,1.183
+1404206983411
+2014,07,01,09,29,39,784,http-bio-0.0.0.0-8080-exec-6,main,Request Done,0.715
+1404206988403
+2014,07,01,09,29,38,985,http-bio-0.0.0.0-8080-exec-22,quickadd,Request Done,2.194
+1404206988403
+2014,07,01,09,29,39,479,http-bio-0.0.0.0-8080-exec-14,addtocartbulk,Request Done,3.582
+1404206988403
+2014,07,01,09,29,44,616,http-bio-0.0.0.0-8443-exec-33,checkoutoptions,Request Done,0.851
+1404206988421
+2014,07,01,09,29,45,124,http-bio-0.0.0.0-8443-exec-14,logout,Request Done,0.078
+1404206988429
+2014,07,01,09,29,49,029,http-bio-0.0.0.0-8080-exec-29,view,Request Done,1.004
+1404206993415
+2014,07,01,09,29,46,305,http-bio-0.0.0.0-8080-exec-29,main,Request Done,0.974
+1404206993403
+2014,07,01,09,29,50,193,http-bio-0.0.0.0-8443-exec-6,checkoutoptions,Request Done,0.6
+1404206993417
+2014,07,01,09,29,51,588,http-bio-0.0.0.0-8443-exec-32,checkoutoptions,Request Done,0.638
+1404206993430
+2014,07,01,09,29,47,511,http-bio-0.0.0.0-8080-exec-10,addtocartbulk,Request Done,0.943
+1404206993405
+2014,07,01,09,29,50,894,http-bio-0.0.0.0-8080-exec-19,main,Request Done,1.983
+1404206993424
+2014,07,01,09,30,03,609,http-bio-0.0.0.0-8443-exec-13,checkLogin,Request Done,2.459
+1404207013414
+2014,07,01,09,29,56,196,http-bio-0.0.0.0-8443-exec-6,login,Request Done,0.286
+1404207013406
+2014,07,01,09,30,03,583,http-bio-0.0.0.0-8080-exec-8,main,Request Done,1.964
+1404207013414
+2014,07,01,09,29,55,156,http-bio-0.0.0.0-8080-exec-12,main,Request Done,1.141
+1404207013405
+2014,07,01,09,30,09,249,http-bio-0.0.0.0-8443-exec-14,logout,Request Done,0.069
+1404207013416
+2014,07,01,09,30,07,739,http-bio-0.0.0.0-8080-exec-11,main,Request Done,0.678
+1404207013415
+2014,07,01,09,29,53,714,http-bio-0.0.0.0-8080-exec-12,productCategoryList,Request Done,0.168
+1404207013403
+2014,07,01,09,29,59,360,http-bio-0.0.0.0-8443-exec-31,checkoutoptions,Request Done,0.742
+1404207013411
+2014,07,01,09,30,03,573,http-bio-0.0.0.0-8080-exec-29,main,Request Done,2.759
+1404207013414
+2014,07,01,09,30,07,195,http-bio-0.0.0.0-8443-exec-18,orderhistory,Request Done,0.344
+1404207013415
+2014,07,01,09,30,08,306,http-bio-0.0.0.0-8443-exec-14,orderstatus,Request Done,0.444
+1404207013416
+2014,07,01,09,29,53,382,http-bio-0.0.0.0-8443-exec-37,checkLogin,Request Done,0.141
+1404207013403
+2014,07,01,09,29,58,662,http-bio-0.0.0.0-8443-exec-11,checkLogin,Request Done,0.046
+1404207013409
+2014,07,01,09,30,01,911,http-bio-0.0.0.0-8443-exec-17,checkoutoptions,Request Done,1.088
+1404207013413
+2014,07,01,09,30,07,001,http-bio-0.0.0.0-8443-exec-37,logout,Request Done,0.067
+1404207013415
+2014,07,01,09,29,52,805,http-bio-0.0.0.0-8080-exec-12,main,Request Done,0.663
+1404207013402
+2014,07,01,09,30,01,116,http-bio-0.0.0.0-8443-exec-18,login,Request Done,0.314
+1404207013412
+2014,07,01,09,29,57,928,http-bio-0.0.0.0-8443-exec-38,processorder,Request Done,23.182
+1404207013409
+2014,07,01,09,30,06,124,http-bio-0.0.0.0-8443-exec-18,logout,Request Done,0.105
+1404207013415
+2014,07,01,09,30,05,330,http-bio-0.0.0.0-8080-exec-29,main,Request Done,0.601
+1404207013415
+2014,07,01,09,29,57,545,http-bio-0.0.0.0-8443-exec-6,checkLogin,Request Done,1.316
+1404207013408
+2014,07,01,09,30,27,358,http-bio-0.0.0.0-8080-exec-25,main,Request Done,1.864
+1404207033408
+2014,07,01,09,30,28,121,http-bio-0.0.0.0-8080-exec-31,main,Request Done,0.431
+1404207033408
+2014,07,01,09,30,34,770,http-bio-0.0.0.0-8080-exec-30,main,Request Done,0.866
+1404207043410
+2014,07,01,09,30,35,444,http-bio-0.0.0.0-8443-exec-12,checkLogin,Request Done,0.181
+1404207043411
+2014,07,01,09,30,38,078,http-bio-0.0.0.0-8443-exec-40,login,Request Done,0.392
+1404207043413
+2014,07,01,09,30,51,931,http-bio-0.0.0.0-8080-exec-15,main,Request Done,2.953
+1404207053413
+2014,07,01,09,30,44,704,http-bio-0.0.0.0-8080-exec-36,main,Request Done,0.666
+1404207053407
+2014,07,01,09,30,48,554,http-bio-0.0.0.0-8080-exec-30,main,Request Done,0.841
+1404207053411
+2014,07,01,09,30,41,403,http-bio-0.0.0.0-8080-exec-30,main,Request Done,4.542
+1404207053402
+2014,07,01,09,30,45,566,http-bio-0.0.0.0-8080-exec-36,main,Request Done,0.765
+1404207053408
+2014,07,01,09,30,51,932,http-bio-0.0.0.0-8080-exec-36,main,Request Done,2.535
+1404207053413
+2014,07,01,09,30,44,002,http-bio-0.0.0.0-8443-exec-7,logout,Request Done,0.067
+1404207053406
+2014,07,01,09,30,49,352,http-bio-0.0.0.0-8443-exec-7,logout,Request Done,0.091
+1404207053411
+2014,07,01,09,30,42,246,http-bio-0.0.0.0-8080-exec-4,main,Request Done,0.62
+1404207053403
+2014,07,01,09,30,47,313,http-bio-0.0.0.0-8443-exec-17,processorder,Request Done,44.35
+1404207053411
+2014,07,01,09,30,41,278,http-bio-0.0.0.0-8443-exec-12,checkLogin,Request Done,3.167
+1404207053402
+2014,07,01,09,31,09,669,http-bio-0.0.0.0-8080-exec-36,keywordsearch,Request Done,0.957
+1404207073418
+2014,07,01,09,31,06,524,http-bio-0.0.0.0-8443-exec-22,checkLogin,Request Done,0.118
+1404207073411
+2014,07,01,09,30,56,168,http-bio-0.0.0.0-8080-exec-10,main,Request Done,0.714
+1404207073405
+2014,07,01,09,31,09,367,http-bio-0.0.0.0-8443-exec-4,checkLogin,Request Done,0.77
+1404207073418
+2014,07,01,09,31,03,833,http-bio-0.0.0.0-8443-exec-24,login,Request Done,0.279
+1404207073410
+2014,07,01,09,31,08,291,http-bio-0.0.0.0-8080-exec-3,main,Request Done,0.441
+1404207073412
+2014,07,01,09,31,10,358,http-bio-0.0.0.0-8080-exec-14,main,Request Done,0.774
+1404207073418
+2014,07,01,09,31,07,207,http-bio-0.0.0.0-8080-exec-40,main,Request Done,0.452
+1404207073412
+2014,07,01,09,31,01,145,http-bio-0.0.0.0-8443-exec-7,checkLogin,Request Done,0.202
+1404207073408
+2014,07,01,09,30,59,423,http-bio-0.0.0.0-8080-exec-36,main,Request Done,0.824
+1404207073407
+2014,07,01,09,31,04,498,http-bio-0.0.0.0-8443-exec-19,checkLogin,Request Done,0.63
+1404207073410
+2014,07,01,09,31,08,566,http-bio-0.0.0.0-8443-exec-32,login,Request Done,0.251
+1404207073412
+2014,07,01,09,31,07,938,http-bio-0.0.0.0-8080-exec-40,main,Request Done,0.514
+1404207073412
+2014,07,01,09,31,02,751,http-bio-0.0.0.0-8080-exec-10,main,Request Done,2.852
+1404207073408
+2014,07,01,09,31,15,419,http-bio-0.0.0.0-8080-exec-29,main,Request Done,0.529
+1404207083407
+2014,07,01,09,31,12,072,http-bio-0.0.0.0-8080-exec-29,main,Request Done,1.834
+1404207083404
+2014,07,01,09,31,19,059,http-bio-0.0.0.0-8080-exec-28,additem,Request Done,0.959
+1404207083410
+2014,07,01,09,31,18,639,http-bio-0.0.0.0-8080-exec-34,view,Request Done,0.583
+1404207083410
+2014,07,01,09,31,13,749,http-bio-0.0.0.0-8080-exec-34,additem,Request Done,0.854
+1404207083407
+2014,07,01,09,31,12,245,http-bio-0.0.0.0-8443-exec-17,login,Request Done,0.234
+1404207083404
+2014,07,01,09,31,17,285,http-bio-0.0.0.0-8080-exec-16,additem,Request Done,0.78
+1404207083408
+2014,07,01,09,31,11,483,http-bio-0.0.0.0-8443-exec-8,checkLogin,Request Done,0.197
+1404207083403
+2014,07,01,09,31,15,192,http-bio-0.0.0.0-8080-exec-35,keywordsearch,Request Done,0.496
+1404207083407
+2014,07,01,09,31,18,878,http-bio-0.0.0.0-8080-exec-7,additem,Request Done,1.058
+1404207083410
+2014,07,01,09,31,13,540,http-bio-0.0.0.0-8443-exec-17,checkLogin,Request Done,1.261
+1404207083407
+2014,07,01,09,31,27,650,http-bio-0.0.0.0-8080-exec-11,additem,Request Done,1.124
+1404207093420
+2014,07,01,09,31,24,454,http-bio-0.0.0.0-8443-exec-3,checkoutoptions,Request Done,0.559
+1404207093404
+2014,07,01,09,31,31,888,http-bio-0.0.0.0-8443-exec-5,checkoutoptions,Request Done,1.483
+1404207093461
+2014,07,01,09,31,27,271,http-bio-0.0.0.0-8443-exec-38,checkoutoptions,Request Done,0.793
+1404207093420
+2014,07,01,09,31,24,447,http-bio-0.0.0.0-8443-exec-26,orderhistory,Request Done,0.351
+1404207093404
+2014,07,01,09,31,25,829,http-bio-0.0.0.0-8080-exec-3,main,Request Done,0.99
+1404207093405
+2014,07,01,09,31,29,929,http-bio-0.0.0.0-8080-exec-3,additem,Request Done,0.961
+1404207093432
+2014,07,01,09,31,22,833,http-bio-0.0.0.0-8080-exec-28,main,Request Done,0.72
+1404207093403
+2014,07,01,09,31,29,344,http-bio-0.0.0.0-8080-exec-23,quickadd,Request Done,0.607
+1404207093432
+2014,07,01,09,31,21,478,http-bio-0.0.0.0-8080-exec-16,main,Request Done,0.885
+1404207093403
+2014,07,01,09,31,20,730,http-bio-0.0.0.0-8080-exec-32,keywordsearch,Request Done,0.842
+1404207093403
+2014,07,01,09,31,29,071,http-bio-0.0.0.0-8443-exec-37,checkoutoptions,Request Done,0.936
+1404207093431
+2014,07,01,09,31,27,946,http-bio-0.0.0.0-8080-exec-17,main,Request Done,0.529
+1404207093420
+2014,07,01,09,31,20,664,http-bio-0.0.0.0-8080-exec-28,view,Request Done,0.754
+1404207093403
+2014,07,01,09,31,25,746,http-bio-0.0.0.0-8080-exec-27,additem,Request Done,1.129
+1404207093405
+2014,07,01,09,31,34,530,http-bio-0.0.0.0-8080-exec-16,main,Request Done,3.904
+1404207098407
+2014,07,01,09,31,34,306,http-bio-0.0.0.0-8080-exec-3,quickadd,Request Done,3.682
+1404207098405
+2014,07,01,09,31,46,719,http-bio-0.0.0.0-8443-exec-3,checkoutoptions,Request Done,0.232
+1404207108412
+2014,07,01,09,31,43,784,http-bio-0.0.0.0-8080-exec-11,main,Request Done,1.489
+1404207108409
+2014,07,01,09,31,41,979,http-bio-0.0.0.0-8443-exec-5,checkoutoptions,Request Done,0.51
+1404207108408
+2014,07,01,09,31,43,822,http-bio-0.0.0.0-8080-exec-5,view,Request Done,0.855
+1404207108411
+2014,07,01,09,31,39,200,http-bio-0.0.0.0-8080-exec-1,main,Request Done,1.058
+1404207108406
+2014,07,01,09,31,42,523,http-bio-0.0.0.0-8443-exec-5,logout,Request Done,0.172
+1404207108409
+2014,07,01,09,31,44,697,http-bio-0.0.0.0-8080-exec-31,main,Request Done,0.72
+1404207108412
+2014,07,01,09,31,41,910,http-bio-0.0.0.0-8080-exec-11,addtocartbulk,Request Done,1.639
+1404207108408
+2014,07,01,09,31,43,807,http-bio-0.0.0.0-8080-exec-31,main,Request Done,1.553
+1404207108409
+2014,07,01,09,31,53,708,http-bio-0.0.0.0-8443-exec-3,checkoutoptions,Request Done,0.559
+1404207133409
+2014,07,01,09,32,09,101,http-bio-0.0.0.0-8443-exec-7,login,Request Done,0.235
+1404207133468
+2014,07,01,09,32,03,882,http-bio-0.0.0.0-8443-exec-29,login,Request Done,0.216
+1404207133466
+2014,07,01,09,32,06,580,http-bio-0.0.0.0-8080-exec-10,main,Request Done,0.496
+1404207133467
+2014,07,01,09,32,07,916,http-bio-0.0.0.0-8080-exec-24,main,Request Done,0.918
+1404207133467
+2014,07,01,09,31,52,786,http-bio-0.0.0.0-8080-exec-31,main,Request Done,0.763
+1404207133407
+2014,07,01,09,32,03,345,http-bio-0.0.0.0-8080-exec-4,main,Request Done,0.749
+1404207133466
+2014,07,01,09,32,01,802,http-bio-0.0.0.0-8443-exec-31,checkLogin,Request Done,0.388
+1404207133437
+2014,07,01,09,32,05,363,http-bio-0.0.0.0-8443-exec-35,checkLogin,Request Done,0.632
+1404207133467
+2014,07,01,09,31,47,921,http-bio-0.0.0.0-8443-exec-36,checkoutoptions,Request Done,0.505
+1404207133405
+2014,07,01,09,32,07,909,http-bio-0.0.0.0-8080-exec-10,main,Request Done,0.902
+1404207133467
+2014,07,01,09,31,52,780,http-bio-0.0.0.0-8080-exec-1,main,Request Done,1.068
+1404207133407
+2014,07,01,09,32,02,545,http-bio-0.0.0.0-8443-exec-37,checkLogin,Request Done,0.15
+1404207133465
+2014,07,01,09,32,00,249,http-bio-0.0.0.0-8080-exec-3,main,Request Done,1.481
+1404207133434
+2014,07,01,09,32,05,004,http-bio-0.0.0.0-8080-exec-12,main,Request Done,0.654
+1404207133467
+2014,07,01,09,31,52,480,http-bio-0.0.0.0-8080-exec-37,main,Request Done,1.74
+1404207133407
+2014,07,01,09,32,07,488,http-bio-0.0.0.0-8443-exec-35,checkLogin,Request Done,0.087
+1404207133467
+2014,07,01,09,32,01,952,http-bio-0.0.0.0-8443-exec-37,processorder,Request Done,24.143
+1404207133437
+2014,07,01,09,32,00,246,http-bio-0.0.0.0-8080-exec-31,main,Request Done,0.959
+1404207133434
+2014,07,01,09,32,04,832,http-bio-0.0.0.0-8443-exec-29,checkLogin,Request Done,0.91
+1404207133467
+2014,07,01,09,32,11,552,http-bio-0.0.0.0-8443-exec-7,checkLogin,Request Done,2.419
+1404207133469
+2014,07,01,09,31,52,475,http-bio-0.0.0.0-8443-exec-23,checkoutoptions,Request Done,1.666
+1404207133407
+2014,07,01,09,32,04,686,http-bio-0.0.0.0-8443-exec-37,login,Request Done,0.254
+1404207133466
+2014,07,01,09,31,56,992,http-bio-0.0.0.0-8080-exec-37,productCategoryList,Request Done,0.273
+1404207133433
+2014,07,01,09,32,11,549,http-bio-0.0.0.0-8080-exec-4,additem,Request Done,2.383
+1404207133469
+2014,07,01,09,32,04,042,http-bio-0.0.0.0-8080-exec-4,main,Request Done,0.519
+1404207133466
+2014,07,01,09,31,56,391,http-bio-0.0.0.0-8080-exec-16,productCategoryList,Request Done,0.294
+1404207133409
+2014,07,01,09,32,18,820,http-bio-0.0.0.0-8443-exec-3,checkLogin,Request Done,0.186
+1404207143415
+2014,07,01,09,32,17,330,http-bio-0.0.0.0-8080-exec-8,main,Request Done,4.968
+1404207143411
+2014,07,01,09,32,17,333,http-bio-0.0.0.0-8080-exec-31,additem,Request Done,4.808
+1404207143411
+2014,07,01,09,32,19,099,http-bio-0.0.0.0-8443-exec-8,logout,Request Done,0.063
+1404207143415
+2014,07,01,09,32,17,327,http-bio-0.0.0.0-8080-exec-4,additem,Request Done,5.118
+1404207143411
+2014,07,01,09,32,18,642,http-bio-0.0.0.0-8080-exec-24,view,Request Done,0.465
+1404207143412
+2014,07,01,09,32,17,460,http-bio-0.0.0.0-8080-exec-24,main,Request Done,1.905
+1404207143412
+2014,07,01,09,32,23,564,http-bio-0.0.0.0-8443-exec-3,checkoutoptions,Request Done,0.59
+1404207148415
+2014,07,01,09,32,19,558,http-bio-0.0.0.0-8080-exec-24,main,Request Done,0.425
+1404207148405
+2014,07,01,09,32,21,078,http-bio-0.0.0.0-8080-exec-18,main,Request Done,0.973
+1404207148405
+2014,07,01,09,32,22,481,http-bio-0.0.0.0-8443-exec-20,checkoutoptions,Request Done,0.282
+1404207148406
+2014,07,01,09,32,30,779,http-bio-0.0.0.0-8080-exec-31,main,Request Done,1.363
+1404207153447
+2014,07,01,09,32,26,020,http-bio-0.0.0.0-8443-exec-20,checkLogin,Request Done,1.336
+1404207153418
+2014,07,01,09,32,24,653,http-bio-0.0.0.0-8443-exec-20,login,Request Done,0.297
+1404207153407
+2014,07,01,09,32,32,143,http-bio-0.0.0.0-8443-exec-35,checkoutoptions,Request Done,0.851
+1404207153455
+2014,07,01,09,32,25,538,http-bio-0.0.0.0-8443-exec-3,checkoutoptions,Request Done,1.466
+1404207153414
+2014,07,01,09,32,34,561,http-bio-0.0.0.0-8080-exec-31,keywordsearch,Request Done,1.377
+1404207163408
+2014,07,01,09,32,37,057,http-bio-0.0.0.0-8080-exec-31,additem,Request Done,1.519
+1404207163416
+2014,07,01,09,32,46,152,http-bio-0.0.0.0-8080-exec-10,keywordsearch,Request Done,1.656
+1404207173410
+2014,07,01,09,32,48,796,http-bio-0.0.0.0-8080-exec-10,additem,Request Done,1.062
+1404207173425
+2014,07,01,09,32,50,500,http-bio-0.0.0.0-8080-exec-10,keywordsearch,Request Done,0.718
+1404207173434
+2014,07,01,09,32,54,544,http-bio-0.0.0.0-8080-exec-17,main,Request Done,0.847
+1404207183412
+2014,07,01,09,32,59,057,http-bio-0.0.0.0-8080-exec-20,main,Request Done,0.912
+1404207183415
+2014,07,01,09,32,54,541,http-bio-0.0.0.0-8080-exec-31,main,Request Done,1.126
+1404207183412
+2014,07,01,09,32,58,554,http-bio-0.0.0.0-8080-exec-17,productCategoryList,Request Done,0.408
+1404207183414
+2014,07,01,09,32,56,242,http-bio-0.0.0.0-8080-exec-18,additem,Request Done,1.355
+1404207183414
+2014,07,01,09,32,52,506,http-bio-0.0.0.0-8443-exec-23,processorder,Request Done,51.803
+1404207183410
+2014,07,01,09,32,59,519,http-bio-0.0.0.0-8080-exec-17,main,Request Done,0.412
+1404207183415
+2014,07,01,09,32,59,035,http-bio-0.0.0.0-8443-exec-23,logout,Request Done,0.068
+1404207183415
+2014,07,01,09,32,53,441,http-bio-0.0.0.0-8443-exec-6,processorder,Request Done,17.016
+1404207183412
+2014,07,01,09,33,00,141,http-bio-0.0.0.0-8080-exec-17,quickadd,Request Done,0.524
+1404207183415
+2014,07,01,09,32,58,113,http-bio-0.0.0.0-8080-exec-20,quickadd,Request Done,1.157
+1404207183414
