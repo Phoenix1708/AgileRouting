@@ -146,7 +146,9 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
 
         while sum(acum[:, 0]) < sample_size:
             t = times_order[0][i]
+            # print "%.5f" % (round(t, 3))
             time_elapsed = t - t_old
+            # print "%.5f" % (round(time_elapsed, 3))
             n = state.shape[0]
 
             # add to each job in process the service time elapsed (divided
@@ -179,9 +181,6 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
                     seperate[int(state[k][0])].append(state[k][2])
                     observed[int(state[k][0])].append(state[k][2])
 
-                acum[int(state[k][0])][0] += 1
-                acum[int(state[k][0])][1] += state[k][2]
-
                 # update state
                 # state = [state(1:k-1,:); state(k+1:end,:)];
                 state = numpy.delete(state, k, axis=0)
@@ -189,6 +188,8 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
 
             i += 1
             t_old = t
+
+        # print acum
 
         mean_service_time[:, e] = \
             [a2 / a1 for a2, a1 in zip(acum[:, 1], acum[:, 0])]
@@ -219,9 +220,10 @@ def calculate_service_rate(num_of_jobs, num_of_cores, data):
                                                           sample_size, warm_up,
                                                           num_of_jobs,
                                                           num_of_cores)
+    # TODO: average ?
     d = mean_service_time.mean(axis=0)
 
-    return d
+    return d[0]
 
 
 # if __name__ == '__main__':
@@ -230,6 +232,7 @@ def calculate_service_rate(num_of_jobs, num_of_cores, data):
 #     #     # test = numpy.hstack((a, b))
 #     #     # test[1][0] = 10
 #     one_list = numpy.ones(shape=10)
+#     print one_list.mean(axis=0)
 #     print one_list
 #     print [one * 3 for one in one_list]
 

@@ -243,16 +243,31 @@ class People():
 
 if __name__ == '__main__':
 
-    people_list = []
-    for i in xrange(4):
-        people_list.append(People(i, 'm', None))
+    line_counter = 2
+    with open('test1.log') as f:
 
-    print people_list[3].name
+            count = 0  # counter for skip to the line left over last time
 
-    for people in people_list:
-        people.name = 'working'
+            for current_line in f:
+                if count == int(line_counter):
+                    break
+                count += 1
 
-    print people_list[3].name
+            print 'skipped %s lines' % count
+            # Skip to the line after ObserverReceivedTimestamp
+            for current_line in f:
+                print 'Current line: %s' % current_line
+
+    # people_list = []
+    # for i in xrange(4):
+    #     people_list.append(People(i, 'm', None))
+    #
+    # print people_list[3].name
+    #
+    # for people in people_list:
+    #     people.name = 'working'
+    #
+    # print people_list[3].name
 
     # import matplotlib.pyplot as plt
     # # plt.plot([10, 46, 57, 53, 96, 84, 69, 32, 76, 75, 75, 41, 81, 72, 82, 87, 75, 88, 81, 71, 78, 73, 86],

@@ -29,7 +29,7 @@ class ThreadingManager(object):
 
         new_thread = threading.Thread(
             target=target_func,
-            name=name+str(name),
+            name=str(name),
             args=para
         )
 

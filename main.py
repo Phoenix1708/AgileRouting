@@ -1,7 +1,7 @@
 import time
 from data_parser.client_server.server_log_processor import process_server_logs
 from data_parser.s3.process_access_log import process_elb_access_log
-from etc.configuration import setup_logging
+from etc.configuration import setup_logging, cfg
 from utilities.multi_threading import ThreadingManager
 from utilities.utils import get_station_region, get_stations
 
@@ -27,11 +27,12 @@ def main():
         line_counters.update({station: 0})
 
     log_base_dir = time.strftime("%Y_%m%d_%H%M")
+    total_num_users = cfg.get('Default', 'total_num_users')
 
     counter = 0  # For testing
-    while counter < 5:  # True:
+    while True:
 
-        # parsing csparql log and ELB access log simultaneously by 2 threads
+        # Processing csparql log and ELB access log simultaneously by 2 threads
 
         # Start csparql log paring first since ELB access log has delay
         # omitting the log file
@@ -39,26 +40,27 @@ def main():
         csparql_log_parser.start_task(
             target_func=process_server_logs,
             name="server_log_processor",
-            para=[log_base_dir, line_counters, 20]
+            para=[log_base_dir, line_counters, total_num_users]
         )
 
         # Begin gathering info of the amount of data
         # transferred through each service station
-        # data_counting_task = ThreadingManager()
-        # data_counting_task.start_task(
-        #     target_func=process_elb_access_log,
-        #     name="elb_access_log_processor",
-        #     para=[elb_buckets_dict, elb_data_manager]
-        # )
-        #
-        # # collecting elb data first since it has delay
-        # elb_data_queue = data_counting_task.collect_results()
-        # data_in = elb_data_queue.get()
-        # data_out = elb_data_queue.get()
+        data_counting_task = ThreadingManager()
+        data_counting_task.start_task(
+            target_func=process_elb_access_log,
+            name="elb_access_log_processor",
+            para=[elb_buckets_dict, elb_data_manager]
+        )
 
+        # collecting csparql log first since its processing will complete first
+        # while elb data might has delay
         csparql_log_queue = csparql_log_parser.collect_results()
         (service_station_metric_list, total_request) = csparql_log_queue.get()
         line_counters = csparql_log_queue.get()
+
+        # collecting elb data now
+        elb_data_queue = data_counting_task.collect_results()
+        data_in, data_out = elb_data_queue.get()
 
         # Begin reading logs from OFBench client.
         # The line_counters is maintained here for continuous log reading
@@ -86,7 +88,7 @@ def main():
 
             requests = service_station_metric.total_requests
 
-            print 'total requests for station %s: %s' \
+            print '\nTotal requests for station %s: %s' \
                   % (station_name, requests)
 
             # arrival_rate and service_rate
@@ -94,30 +96,30 @@ def main():
             service_rates.update({station_name: service_rate})
 
             # calculate average data sent and receive
-            # d_in = data_in.get(station_name)
-            # d_out = data_out.get(station_name)
+            d_in = data_in.get(station_name)
+            d_out = data_out.get(station_name)
 
-            # convert the amount of data to KB in order to calculate
-            # cost using the ELB pricing
-            # d_in = float(d_in / 1024)
-            # d_out = float(d_out / 1024)
-            #
-            # avg_data_in_per_req = d_in / requests
-            # avg_data_out_per_req = d_out / requests
-            #
-            # avg_data_in_per_reqs.update({station_name: avg_data_in_per_req})
-            # avg_data_out_per_reqs.update({station_name: avg_data_out_per_req})
+            # convert the amount of data to KB
+            d_in = float(d_in / 1024)
+            d_out = float(d_out / 1024)
+
+            avg_data_in_per_req = d_in / requests
+            avg_data_out_per_req = d_out / requests
+
+            avg_data_in_per_reqs.update({station_name: avg_data_in_per_req})
+            avg_data_out_per_reqs.update({station_name: avg_data_out_per_req})
 
         # For testing purpose
-        print '\ntotal_request: %s' % total_request
-        print 'avg_data_in_per_reqs: %s' % avg_data_in_per_reqs
-        print 'avg_data_out_per_reqs: %s' % avg_data_out_per_reqs
-        print 'arrival_rates: %s' % arrival_rates
-        print 'service_rates: %s' % service_rates
+        print '\n[Debug] total_request: %s' % total_request
+        print '[Debug] avg_data_in_per_reqs: %s' % avg_data_in_per_reqs
+        print '[Debug] avg_data_out_per_reqs: %s' % avg_data_out_per_reqs
+        print '[Debug] arrival_rates: %s' % arrival_rates
+        print '[Debug] service_rates: %s' % service_rates
         counter += 1
         # time.sleep(20)
 
         # TODO: Delay service level agreement, cost budget
+        # TODO: print out delay
 
         # ELB pricing
         # elb_prices = [0.008, 0.011]

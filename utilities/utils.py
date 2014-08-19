@@ -1,3 +1,4 @@
+from __future__ import division
 import base64
 import hashlib
 import os
@@ -6,7 +7,9 @@ import threading
 import time
 import urllib
 import urllib2
+import math
 
+from datetime import datetime
 from etc.configuration import log, cfg
 from utilities.exception import GeneralError
 from utilities.request_headers import HEADER_PREFIX_KEY, DATE_HEADER_KEY, \
@@ -184,6 +187,53 @@ def print_message(msg):
     print '[%s]: %s' % (thread_id, msg)
 
 
+def get_expected_num_logs():
+    """
+    Function to return the number of ELB access log expected.
+    (For code re-usability)
+    """
+    measurement_interval = cfg.get_int('Default', 'measurement_interval', 10)
+    logging_time = cfg.get_int('s3', 'log_omitting_time', 60)
+    expected_logs_to_obtain = math.floor(measurement_interval / logging_time)
+
+    return expected_logs_to_obtain
+
+
+def get_next_nth_elb_log_time(n):
+    """
+    Get the next minutes e.g 5 or 10 or 15 that the S3 will omit ELB access
+    log. It can also get the time of next nth log base on current time
+
+    :return:
+    """
+    current_time = datetime.utcnow()
+    [year, month, day, hour, minute] = \
+        current_time.year, current_time.month, current_time.day, \
+        current_time.hour, current_time.minute
+
+    # Test
+    print_message('Current Time: %s' % '-'.join([str(year), str(month),
+                                                 str(day), str(hour),
+                                                 str(minute)]))
+    # Calculate the next expected log file omitted by S3.
+    # With 5 minute logging interval, logs are omitted every 5 minutes
+    # at each hour, hence the ceiling of the division of current minute
+    # with 5 (minutes) should be the next expected minute at which a new
+    # log will be omitted
+    logging_interval = cfg.get_int('s3', 'log_omitting_time', 60)
+
+    next_expected_logging_minute = \
+        int(logging_interval * math.ceil(minute / 5)) + 5 * (n - 1)
+
+    if next_expected_logging_minute == 60:
+        hour += 1
+        next_expected_logging_minute = 0
+
+    print_message('Next expected minute %s' % next_expected_logging_minute)
+
+    return day, hour, month, next_expected_logging_minute, year
+
+
 def pythonize_name(name):
     """Convert camel case to a "pythonic" name.
 
@@ -214,7 +264,7 @@ def get_utf8_value(value):
 
 # def find_class(module_name, class_name=None):
 # if class_name:
-#         module_name = "%s.%s" % (module_name, class_name)
+# module_name = "%s.%s" % (module_name, class_name)
 #     modules = module_name.split('.')
 #     c = None
 #

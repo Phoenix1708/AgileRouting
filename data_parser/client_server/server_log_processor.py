@@ -3,11 +3,14 @@ import os
 import time
 import math
 
+from datetime import datetime
+
 from data_parser import client_server
 from data_parser.client_server.monitor_log_parser import process_monitor_log
 from data_parser.client_server.service_rate import calculate_service_rate
 from utilities.multi_threading import ThreadingManager
-from utilities.utils import get_station_csparql, print_message
+from utilities.utils import get_station_csparql, print_message, \
+    get_expected_num_logs, get_next_nth_elb_log_time
 
 
 class ServiceStationMetric:
@@ -25,6 +28,26 @@ class ServiceStationMetric:
         self.service_rate = service_rate
 
 
+def calculate_waiting_time():
+    # record the start time to calculate time elapsed
+    start_time = time.time()
+    # get expected ELB access logs based on measurement interval
+    expected_logs_to_obtain = get_expected_num_logs()
+
+    # calculate the time for which the last expected access log is
+    day, hour, month, next_expected_logging_minute, year \
+        = get_next_nth_elb_log_time(expected_logs_to_obtain)
+
+    # from UTC to GMT hour + 1
+    time_str = ''.join([str(year), str(month), str(day), str(hour+1),
+                        str(int(next_expected_logging_minute))])
+    date = datetime.strptime("".join(time_str), '%Y%m%d%H%M')
+    date_milli = time.mktime(date.timetuple()) + date.microsecond
+    # calculate waiting time
+    waiting_time = (date_milli - start_time)
+    return waiting_time
+
+
 def process_server_logs(base_dir, line_counters, total_users, queue):
     """
 
@@ -34,12 +57,18 @@ def process_server_logs(base_dir, line_counters, total_users, queue):
     :param queue:           Queue to store results when using in thread
     :return:
     """
-    # create directory to store logs
 
-    # Wait for measurement interval before processing logs (e.g 10 mins)
-    # measurement_interval = cfg.get('Default', 'measurement_interval', 10)
-    measurement_interval = 5  # test
-    time.sleep(measurement_interval * 60)
+    # First we need to calculate how much time to wait before retrieving
+    # csparql logs. i.e how long the actual measurement time is. Since S3
+    # only omit log at 5, 10, 15 etc. minute of the hour, we can only measure
+    #  the time that measurement start until the last expected log omission time
+    # which is not the actual time that log being obtained since there is delay
+    waiting_time = calculate_waiting_time()
+
+    print_message('')
+    print_message('Waiting for the next batch of service station monitoring '
+                  'logs (%s seconds)...\n' % waiting_time)
+    time.sleep(waiting_time)
 
     module_path = os.path.dirname(client_server.__file__)
     base_dir = module_path + '/logs/' + base_dir + '/'
@@ -48,6 +77,11 @@ def process_server_logs(base_dir, line_counters, total_users, queue):
     station_observers = get_station_csparql()
     # retrieve and process the log of each service station with a new threads
     csparql_reader = ThreadingManager()
+
+    # python strptime thread safety bug. Has to call strptime once before
+    # creating thread. Details can be found on:
+    # http://bugs.python.org/issue11108
+    time.strptime("30 Nov 00", "%d %b %y")
 
     for station_name, observer_ip in station_observers.iteritems():
         observer_addr = '%s=%s' % (station_name, observer_ip)
@@ -81,7 +115,7 @@ def process_server_logs(base_dir, line_counters, total_users, queue):
 
         service_station_metric = ServiceStationMetric(station_name,
                                                       station_total_requests,
-                                                      arrival_rate,
+                                                      arrival_rate / 60,
                                                       service_rate_para_list,
                                                       service_rate=0)
 
@@ -98,7 +132,7 @@ def process_server_logs(base_dir, line_counters, total_users, queue):
         mu_para_list = station_metric.service_rate_para_list
 
         # Calculating service rate of each server in one station
-        server_time_list = []  # list to store service time of each server
+        service_time_list = []  # list to store service time of each server
 
         # for service rate calculation parameters for each server ...
         for s_para in mu_para_list:
@@ -111,15 +145,22 @@ def process_server_logs(base_dir, line_counters, total_users, queue):
 
             mean_service_time = calculate_service_rate(num_of_user,
                                                        num_of_cores, data)
-            server_time_list.append(mean_service_time)
+            service_time_list.append(mean_service_time)
 
             print_message('Mean service time of VM \'%s\' at station \'%s\': %s'
                           % (s_para['vm_name'], station_metric.station_name,
                              str(mean_service_time)))
 
-        # The overall service rate
-        # TODO: max or average
-        overall_service_rate = max(server_time_list)
+        # The overall service rate is calculated by the number of requests
+        # completed by all servers within the time that the slowest server
+        # takes to complete a single request
+        max_time = max(service_time_list)
+
+        comp_reg_sum = 0
+        for service_time in service_time_list:
+            comp_reg_sum += max_time / service_time
+
+        overall_service_rate = comp_reg_sum / max_time
 
         station_metric.service_rate = overall_service_rate
 

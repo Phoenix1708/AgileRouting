@@ -1,14 +1,11 @@
 from __future__ import division
 import os
-from time import strptime, mktime
+from time import mktime
 import time
-import math
-import numpy
-from scipy import stats
+
+from datetime import datetime
 
 from data_parser.client_server.data_formation import format_data
-from data_parser.client_server.service_rate import calculate_service_rate
-from etc.configuration import cfg
 from utilities.multi_threading import ThreadingManager
 from utilities.utils import print_message
 
@@ -72,7 +69,7 @@ def _generate_data(base_path, queue):
 
             date_str = [split_str[j] for j in xrange(7)]
 
-            date = strptime("".join(date_str), '%Y%m%d%H%M%S%f')
+            date = datetime.strptime("".join(date_str), '%Y%m%d%H%M%S%f')
 
             # date = None
             # # python strptime thread safety bug
@@ -85,7 +82,8 @@ def _generate_data(base_path, queue):
             # "Details: %s" % e
 
             # date_milli = unix_time(datetime.fromtimestamp(mktime(date)))
-            date_milli = mktime(date) * 1000
+            # date_milli = mktime(date) * 1000
+            date_milli = mktime(date.timetuple())*1e3 + date.microsecond/1e3
             # date_milli = calendar.timegm(date)
 
             # jobID = split_str[7]
@@ -145,14 +143,14 @@ def _generate_data(base_path, queue):
         queue.put(results)
 
 
-def generate_data(logs_folder_path, num_of_vm):
+def generate_data(logs_folder_path):
     """ Generate metric data for each virtual machine monitored
         by the observer
     """
 
+    # Get all "directories" that contains files
     all_dirs = [dp for dp, dn, file_names in os.walk(logs_folder_path)
                 if file_names]
-    # for f in file_names if os.path.splitext(f)[1] == '.txt']
 
     data_generators_manager = ThreadingManager()
 
@@ -161,7 +159,7 @@ def generate_data(logs_folder_path, num_of_vm):
     # http://bugs.python.org/issue11108
     time.strptime("30 Nov 00", "%d %b %y")
 
-    for num in xrange(num_of_vm):
+    for num in xrange(len(all_dirs)):
         logs_path = all_dirs[num]
 
         data_generators_manager.start_tasks(
@@ -278,4 +276,4 @@ def generate_data(logs_folder_path, num_of_vm):
     # # all servers in the service station.
     # arrival_rate = sum(avg_arrival_rate)
 
-    print "done"
+    # print "done"

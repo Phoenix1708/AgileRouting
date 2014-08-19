@@ -1,13 +1,13 @@
 from __future__ import division
-import math
 import os
 import time
-from datetime import datetime
+
 from connection.s3_connection import S3Connection
 from etc.configuration import cfg
 from utilities.multi_threading import ThreadingManager
+from utilities.utils import print_message, get_expected_num_logs, \
+    get_next_nth_elb_log_time
 
-s3_logging_interval = 5  # minute
 
 log_polling_interval = cfg.get_int('s3', 'log_polling_interval', 60)
 
@@ -74,28 +74,10 @@ def calculate_key_prefix(elb_region, elb_name):
     :param elb_name:
     :return:
     """
-    current_time = datetime.utcnow()
-    [year, month, day, hour, minute] = \
-        current_time.year, current_time.month, current_time.day, \
-        current_time.hour, current_time.minute
+    print_message('Retrieving access log for %s ...' % elb_name)
 
-    # Test
-    print '\nRetrieving access log for %s ...' % elb_name
-    print 'Current Time: %s' % '-'.join([str(year), str(month), str(day),
-                                         str(hour), str(minute)])
-    # Calculate the next expected log file omitted by S3.
-    # With 5 minute logging interval, logs are omitted every 5 minutes
-    # at each hour, hence the ceiling of the division of current minute
-    # with 5 (minutes) should be the next expected minute at which a new
-    # log will be omitted
-
-    next_expected_logging_minute = \
-        int(s3_logging_interval * math.ceil(minute / 5))
-    if next_expected_logging_minute == 60:
-        hour += 1
-        next_expected_logging_minute = 0
-
-    print 'Next expected minute %s' % next_expected_logging_minute
+    day, hour, month, next_expected_logging_minute, year\
+        = get_next_nth_elb_log_time(1)
 
     # convert month, day, hour and minute to 2 digit representation
     month = '%02d' % month
@@ -105,6 +87,7 @@ def calculate_key_prefix(elb_region, elb_name):
     # The time string that the expected log file should contain
     time_str = "%s%s%sT%s%sZ" % (year, month, day, hour,
                                  next_expected_logging_minute)
+
     aws_account_id = str(305933725014)
     region = elb_region
     load_balancer_name = elb_name
@@ -155,13 +138,20 @@ def process_access_log(bucket, elb_region, elb_name):
     total_sent = 0
     total_receive = 0
 
-    # get measurement interval from config
-    m_interval = cfg.get_int('Default', 'measurement_interval', 10)
     # record the start time to calculate time elapsed
-    start_time = time.time()
+    # start_time = time.time()
+
+    # Since the actually log omission time varies we determine the time stop
+    # waiting for log by the number of logs retrieved. Each log represents
+    # elb access of either 5 minutes or 1 hour
+
+    # Counter for the number of log obtained.
+    logs_obtained = 0
+    expected_logs_to_obtain = get_expected_num_logs()
 
     # check whether the it has reached the end of measurement interval
-    while (time.time() - start_time) / 60 <= m_interval:
+    # while (time.time() - start_time) / 60 <= m_interval:
+    while logs_obtained < expected_logs_to_obtain:
 
         request_headers = calculate_key_prefix(elb_region, elb_name)
 
@@ -172,12 +162,13 @@ def process_access_log(bucket, elb_region, elb_name):
         time_counter = 0
         # Wait for polling interval while the log is not available
         while not matching_keys and len(matching_keys) < 2:
-            print 'Searching for bucket key(s) that start with: %s' \
-                  % request_headers['prefix']
+            print_message('')
+            print_message('Searching for bucket key(s) that start with: %s'
+                          % request_headers['prefix'])
             matching_keys = bucket.search_key(parameters=request_headers)
 
             if matching_keys:
-                print 'Found %s' % matching_keys
+                print_message('Found %s' % matching_keys)
                 if len(matching_keys) > 1:
                     break
 
@@ -185,15 +176,16 @@ def process_access_log(bucket, elb_region, elb_name):
             # There could be up to 5 mins delay for actual log delivery
             # http://docs.aws.amazon.com/ElasticLoadBalancing/latest/
             # DeveloperGuide/access-log-collection.html
-            print 'Time elapsed since searching: %s min(s)' \
-                  % (time_counter / 60)
+            print_message('Time elapsed since searching: %s min(s)'
+                          % (time_counter / 60))
             if time_counter / 60 > 10:
-                print 'Re-calculating expected log file...'
+                print_message('Re-calculating expected log file...')
                 request_headers = calculate_key_prefix(elb_region, elb_name)
                 continue
 
-            print 'Waiting for log to be omitted (polling interval %s ' \
-                  'seconds) ...\n' % log_polling_interval
+            print_message('Waiting for log to be omitted (polling interval %s '
+                          'seconds) ...\n' % log_polling_interval)
+
             time.sleep(log_polling_interval)
             time_counter += log_polling_interval
 
@@ -224,12 +216,14 @@ def process_access_log(bucket, elb_region, elb_name):
         total_receive += int(receive)
 
         # debug
-        print 'Total amount of data received by %s : %s' % (elb_name,
-                                                            total_receive)
-        print 'Total amount of data sent by %s : %s' % (elb_name, total_sent)
+        print_message('Total amount of data received by %s so far : %s'
+                      % (elb_name, total_receive))
+        print_message('Total amount of data sent by %s so far : %s'
+                      % (elb_name, total_sent))
 
         # wait for 2 minute before another poll
         # time.sleep(120)
+        logs_obtained += 1
 
     return '%s,%s' % (total_receive, total_sent)
 
@@ -257,6 +251,7 @@ def counting_elb_data(bucket, elb, queue):
 
 
 def process_elb_access_log(elb_buckets_dict, elb_data_manager, queue):
+
     for elb, bucket in elb_buckets_dict.iteritems():
         c = S3Connection()
         bucket = c.get_bucket(bucket)
@@ -281,8 +276,7 @@ def process_elb_access_log(elb_buckets_dict, elb_data_manager, queue):
         data_out.update({station: int(data_sent)})
 
     # debug
-    print data_in
-    print data_out
+    print_message(data_in)
+    print_message(data_out)
 
-    queue.put(data_in)
-    queue.put(data_out)
+    queue.put((data_in, data_out))
