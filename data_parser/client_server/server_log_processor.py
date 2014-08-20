@@ -139,7 +139,7 @@ def process_server_logs(base_dir, line_counters, total_users, queue):
             # number of users for this vm
             num_of_requests = s_para['num_of_requests']
             num_of_user = int(math.ceil(
-                total_users * float(num_of_requests / total_requests)))
+                total_users * (num_of_requests / total_requests)))
             num_of_cores = s_para['cpu_cores']
             data = s_para['data']
 

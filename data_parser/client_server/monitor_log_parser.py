@@ -311,8 +311,9 @@ def calculate_metrics(data_list):
         cpu_core = cfg.get('VMSpec', vm_name)
         if not cpu_core:
             print 'No specification configured for VM \'%s\'' % vm_name
+            return
 
-        print 'Number of CPUs: %s' % cpu_core
+        print_message('Number of CPUs of \'%s\': %s' % (vm_name, cpu_core))
 
         para_tuple.update({'cpu_cores': cpu_core})
 

@@ -74,6 +74,7 @@ def calculate_key_prefix(elb_region, elb_name):
     :param elb_name:
     :return:
     """
+    print_message('')
     print_message('Retrieving access log for %s ...' % elb_name)
 
     day, hour, month, next_expected_logging_minute, year\
@@ -161,14 +162,15 @@ def process_access_log(bucket, elb_region, elb_name):
         # expected log name
         time_counter = 0
         # Wait for polling interval while the log is not available
-        while not matching_keys and len(matching_keys) < 2:
+        while not matching_keys or len(matching_keys) < 2:
             print_message('')
             print_message('Searching for bucket key(s) that start with: %s'
                           % request_headers['prefix'])
             matching_keys = bucket.search_key(parameters=request_headers)
 
             if matching_keys:
-                print_message('Found %s' % matching_keys)
+                for m_key in matching_keys:
+                    print_message('Found %s' % m_key)
                 if len(matching_keys) > 1:
                     break
 
@@ -216,14 +218,16 @@ def process_access_log(bucket, elb_region, elb_name):
         total_receive += int(receive)
 
         # debug
-        print_message('Total amount of data received by %s so far : %s'
-                      % (elb_name, total_receive))
-        print_message('Total amount of data sent by %s so far : %s'
-                      % (elb_name, total_sent))
+        print_message('Total amount of data (bytes) received by \'%s\' so far '
+                      ': %s' % (elb_name, total_receive))
+        print_message('Total amount of data (bytes) sent by \'%s\' so far '
+                      ': %s' % (elb_name, total_sent))
 
         # wait for 2 minute before another poll
         # time.sleep(120)
         logs_obtained += 1
+        print_message('Access log of \'%s\' obtained so far : %s\n'
+                      % (elb_name, logs_obtained))
 
     return '%s,%s' % (total_receive, total_sent)
 
@@ -276,7 +280,7 @@ def process_elb_access_log(elb_buckets_dict, elb_data_manager, queue):
         data_out.update({station: int(data_sent)})
 
     # debug
-    print_message(data_in)
-    print_message(data_out)
+    print_message('Data in (bytes): %s' % data_in)
+    print_message('Data out (bytes): %s' % data_out)
 
     queue.put((data_in, data_out))

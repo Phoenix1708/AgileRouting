@@ -1,4 +1,6 @@
+from __future__ import division
 import time
+import math
 from data_parser.client_server.server_log_processor import process_server_logs
 from data_parser.s3.process_access_log import process_elb_access_log
 from etc.configuration import setup_logging, cfg
@@ -27,9 +29,9 @@ def main():
         line_counters.update({station: 0})
 
     log_base_dir = time.strftime("%Y_%m%d_%H%M")
-    total_num_users = cfg.get('Default', 'total_num_users')
+    total_num_users = cfg.get_int('Default', 'total_num_users')
 
-    counter = 0  # For testing
+    # counter = 0  # For testing
     while True:
 
         # Processing csparql log and ELB access log simultaneously by 2 threads
@@ -95,6 +97,12 @@ def main():
             arrival_rates.update({station_name: arrival_rate})
             service_rates.update({station_name: service_rate})
 
+            s_rate = service_rate
+            response_time = math.pow(service_rate, -1) / \
+                            (1 - math.pow(service_rate, -1) * arrival_rate)
+            print '[Debug] predicted response time of service station ' \
+                  '\'%s\': %s' % (station_name, response_time)
+
             # calculate average data sent and receive
             d_in = data_in.get(station_name)
             d_out = data_out.get(station_name)
@@ -114,8 +122,9 @@ def main():
         print '[Debug] avg_data_in_per_reqs: %s' % avg_data_in_per_reqs
         print '[Debug] avg_data_out_per_reqs: %s' % avg_data_out_per_reqs
         print '[Debug] arrival_rates: %s' % arrival_rates
-        print '[Debug] service_rates: %s' % service_rates
-        counter += 1
+        print '[Debug] service_rates: %s\n' % service_rates
+
+        # counter += 1
         # time.sleep(20)
 
         # TODO: Delay service level agreement, cost budget
@@ -143,7 +152,7 @@ def main():
         # .eu-west-1.elb.amazonaws.com.'
         #
         # base_record = dict(name="www.%s" % base_domain,
-        #                    type="A", weight=weight_a,
+        # type="A", weight=weight_a,
         #                    identifier="Ireland")
         #
         # rrs = ResourceRecordSets(conn, zone.id)
