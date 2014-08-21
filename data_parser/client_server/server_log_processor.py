@@ -28,42 +28,17 @@ class ServiceStationMetric:
         self.service_rate = service_rate
 
 
-def calculate_waiting_time():
-    # record the start time to calculate time elapsed
-    start_time = time.time()
-    # get expected ELB access logs based on measurement interval
-    expected_logs_to_obtain = get_expected_num_logs()
-
-    # calculate the time for which the last expected access log is
-    day, hour, month, next_expected_logging_minute, year \
-        = get_next_nth_elb_log_time(expected_logs_to_obtain)
-
-    # from UTC to GMT hour + 1
-    time_str = ''.join([str(year), str(month), str(day), str(hour+1),
-                        str(int(next_expected_logging_minute))])
-    date = datetime.strptime("".join(time_str), '%Y%m%d%H%M')
-    date_milli = time.mktime(date.timetuple()) + date.microsecond
-    # calculate waiting time
-    waiting_time = (date_milli - start_time)
-    return waiting_time
-
-
-def process_server_logs(base_dir, line_counters, total_users, queue):
+def process_server_logs(base_dir, line_counters, total_users, waiting_time,
+                        queue):
     """
 
     :param base_dir:        Base directory of monitor log
     :param line_counters:   Counter for continuously reading the single log file
     :param total_users:     The total number of users simulated
     :param queue:           Queue to store results when using in thread
+    :param waiting_time:    The measurement time
     :return:
     """
-
-    # First we need to calculate how much time to wait before retrieving
-    # csparql logs. i.e how long the actual measurement time is. Since S3
-    # only omit log at 5, 10, 15 etc. minute of the hour, we can only measure
-    #  the time that measurement start until the last expected log omission time
-    # which is not the actual time that log being obtained since there is delay
-    waiting_time = calculate_waiting_time()
 
     print_message('')
     print_message('Waiting for the next batch of service station monitoring '

@@ -74,7 +74,6 @@ def calculate_key_prefix(elb_region, elb_name):
     :param elb_name:
     :return:
     """
-    print_message('')
     print_message('Retrieving access log for %s ...' % elb_name)
 
     day, hour, month, next_expected_logging_minute, year\
@@ -163,6 +162,7 @@ def process_access_log(bucket, elb_region, elb_name):
         time_counter = 0
         # Wait for polling interval while the log is not available
         while not matching_keys or len(matching_keys) < 2:
+
             print_message('')
             print_message('Searching for bucket key(s) that start with: %s'
                           % request_headers['prefix'])
@@ -255,15 +255,23 @@ def counting_elb_data(bucket, elb, queue):
 
 
 def process_elb_access_log(elb_buckets_dict, elb_data_manager, queue):
+    """
+    Primarily handle S3 log processing threads
 
-    for elb, bucket in elb_buckets_dict.iteritems():
+    :param elb_buckets_dict:
+    :param elb_data_manager:
+    :param queue:
+    :return:
+    """
+
+    for elb_region_str, bucket_name in elb_buckets_dict.iteritems():
         c = S3Connection()
-        bucket = c.get_bucket(bucket)
+        bucket = c.get_bucket(bucket_name)
 
         elb_data_manager.start_tasks(
             target_func=counting_elb_data,
             name="elb_data_collector",
-            para=[bucket, elb]
+            para=[bucket, elb_region_str]
         )
 
     # waiting for all threads to finish parsing S3 log

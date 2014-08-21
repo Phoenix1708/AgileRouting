@@ -59,35 +59,78 @@ def get_env(env_var_name):
     return env_var
 
 
-def get_ip(host_name):
-    ip = cfg.get('IPs', host_name, None)
-    if not ip:
-        raise GeneralError(msg="No IP configuration found for host name \'%s\'."
-                               % host_name)
-    return ip
+# def get_ip(host_name):
+#     ip = cfg.get('IPs', host_name, None)
+#     if not ip:
+#         raise GeneralError(msg="No IP configuration
+#                               found for host name \'%s\'."
+#                                % host_name)
+#     return ip
+#
+#
+# def get_elb_bucket(station_name):
+#     elb_bucket = cfg.get('ELBBucket', station_name, None)
+#     if not elb_bucket:
+#         raise GeneralError(msg="No access log location (S3 buckets) "
+#                                "configuration found for station "
+#                                "\'%s\'." % station_name)
+#     return elb_bucket
 
-# TODO: when the number of servers increases this needs to be more generic
-# e.g adding function to dynamically building the metadata map
-observer_1_ip = get_ip('CSPARQL_STATION_1_OBSERVER_IP')
-observer_2_ip = get_ip('CSPARQL_STATION_2_OBSERVER_IP')
 
-station_metadata_map = {
-    'region': {
-        'xueshi-station-1': 'eu-west-1',
-        'xueshi-station-2': 'us-east-1'
-    },
-
-    'ip': {
-        'xueshi-station-1': observer_1_ip,
-        'xueshi-station-2': observer_2_ip
-    }
-}
+def get_config_value(section, entry_key):
+    cfg_value = cfg.get(section, entry_key, None)
+    if not cfg_value:
+        raise GeneralError(msg="No %s configuration found for "
+                               "\'%s\' " % (section, entry_key))
+    return cfg_value
 
 
 def get_stations():
-    # Test
-    return ['xueshi-station-1']
-    # return ['xueshi-station-1', 'xueshi-station-2']
+
+    # return ['xueshi-station-1']  # Test
+    return ['xueshi-station-1', 'xueshi-station-2']
+
+
+def get_stations_bandwidth():
+
+    available_stations = get_stations()
+    station_in_band_map = station_metadata_map['in_bandwidths']
+    station_out_band_map = station_metadata_map['out_bandwidths']
+
+    available_station_in_band_map = dict()
+    available_station_out_band_map = dict()
+
+    for avail_station in available_stations:
+
+        if station_in_band_map[avail_station]:
+            available_station_in_band_map.update(
+                {avail_station: station_in_band_map[avail_station]})
+
+        if station_out_band_map[avail_station]:
+            available_station_out_band_map.update(
+                {avail_station: station_out_band_map[avail_station]})
+
+    return available_station_in_band_map, available_station_out_band_map
+
+
+def get_elb_buckets_map():
+    """
+    The dictionary store the mapping between service station and the S3
+    buckets name of the ELB used by this station in order to further match
+    with other metrics for the same service station
+
+    :return: station elb log s3 bucket mapping
+    """
+    available_stations = get_stations()
+    station_elb_log_map = station_metadata_map['s3_bucket']
+
+    available_station_elb_log_map = dict()
+    for avail_station in available_stations:
+        if station_elb_log_map[avail_station]:
+            available_station_elb_log_map.update(
+                {avail_station: station_elb_log_map[avail_station]})
+
+    return available_station_elb_log_map
 
 
 def get_station_region():
@@ -225,13 +268,34 @@ def get_next_nth_elb_log_time(n):
     next_expected_logging_minute = \
         int(logging_interval * math.ceil(minute / 5)) + 5 * (n - 1)
 
-    if next_expected_logging_minute == 60:
+    if next_expected_logging_minute >= 60:
         hour += 1
-        next_expected_logging_minute = 0
+        next_expected_logging_minute -= 60
 
-    print_message('Next expected minute %s' % next_expected_logging_minute)
+    print_message('Next expected time %s:%s'
+                  % (hour, next_expected_logging_minute))
 
     return day, hour, month, next_expected_logging_minute, year
+
+
+def calculate_waiting_time():
+    # record the start time to calculate time elapsed
+    start_time = time.time()
+    # get expected ELB access logs based on measurement interval
+    expected_logs_to_obtain = get_expected_num_logs()
+
+    # calculate the time for which the last expected access log is
+    day, hour, month, next_expected_logging_minute, year \
+        = get_next_nth_elb_log_time(expected_logs_to_obtain)
+
+    # from UTC to GMT hour + 1
+    time_str = ''.join([str(year), str(month), str(day), str(hour+1),
+                        str(int(next_expected_logging_minute))])
+    date = datetime.strptime("".join(time_str), '%Y%m%d%H%M')
+    date_milli = time.mktime(date.timetuple()) + date.microsecond
+    # calculate waiting time
+    waiting_time = (date_milli - start_time)
+    return waiting_time
 
 
 def pythonize_name(name):
@@ -439,3 +503,47 @@ def canonical_string(method, path, headers, expires=None):
             buf += '&'.join(qsa)
 
     return buf
+
+
+# TODO: when the number of servers increases this needs to be more generic
+# Script that setup IPs when this module being imported so that the configure
+#  will be checked before actually running any code
+station_metadata_map = {
+    'region': {
+        'xueshi-station-1': 'eu-west-1',
+        'xueshi-station-2': 'us-east-1'
+    },
+
+    'ip': {
+
+    },
+
+    's3_bucket': {
+
+    },
+
+    'in_bandwidths': {
+
+    },
+
+    'out_bandwidths': {
+
+    }
+}
+
+stations = get_stations()
+for station in stations:
+    elb_bucket = get_config_value('ELBBucket', station)
+    station_metadata_map['s3_bucket'].update({station: elb_bucket})
+
+    ip_config_str = station+'_observer_ip'
+    observer_ip = get_config_value('IPs', ip_config_str)
+    station_metadata_map['ip'].update({station: observer_ip})
+
+    in_bandwidth = get_config_value('InBandwidths', station)
+    station_metadata_map['in_bandwidths'].update({station: int(in_bandwidth)})
+
+    out_bandwidth = get_config_value('OutBandwidths', station)
+    station_metadata_map['out_bandwidths'].update({station: int(out_bandwidth)})
+
+# print station_metadata_map
