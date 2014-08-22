@@ -31,9 +31,6 @@ def parse_monitor_log(input_files_dir, line_counter):
     sub_folder_name = '%s/%s/' % (file_name[0: file_name.rfind('.')],
                                   current_time)
 
-    if not os.path.exists(sub_folder_name):
-        os.makedirs(sub_folder_name)
-
     metric_name = None
 
     # keep track of last metric id
@@ -143,7 +140,7 @@ def parse_monitor_log(input_files_dir, line_counter):
             # that when expecting 'isAbout' i.e the first property,
             # we don't check for metric ID, since it could be a new metric
             if metric_prop != expected_properties[expected_prop_counter] or \
-                (expected_prop_counter != 0 and metric_id != last_metric_id):
+               (expected_prop_counter != 0 and metric_id != last_metric_id):
                 # Skip to the next 'isAbout' line
                 expected_prop_counter = 0  # expecting the 'isAbout'
                 skip_counter += 1

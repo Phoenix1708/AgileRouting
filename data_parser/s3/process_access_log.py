@@ -174,15 +174,18 @@ def process_access_log(bucket, elb_region, elb_name):
                 if len(matching_keys) > 1:
                     break
 
+            print_message('Time elapsed since current searching: %s min(s)'
+                          % (time_counter / 60))
+
             # Check whether we need to wait for new log.
             # There could be up to 5 mins delay for actual log delivery
             # http://docs.aws.amazon.com/ElasticLoadBalancing/latest/
             # DeveloperGuide/access-log-collection.html
-            print_message('Time elapsed since searching: %s min(s)'
-                          % (time_counter / 60))
             if time_counter / 60 > 10:
+                print_message('')
                 print_message('Re-calculating expected log file...')
                 request_headers = calculate_key_prefix(elb_region, elb_name)
+                time_counter = 0
                 continue
 
             print_message('Waiting for log to be omitted (polling interval %s '

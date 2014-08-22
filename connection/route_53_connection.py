@@ -105,72 +105,6 @@ class Route53Connection(AWSConnection):
             if zone['Name'] == hosted_zone_name:
                 return self.get_hosted_zone(zone['Id'].split('/')[-1])
 
-    # def create_hosted_zone(self, domain_name, caller_ref=None, comment=''):
-    #     """
-    #     Create a new Hosted Zone.  Returns a Python data structure with
-    #     information about the newly created Hosted Zone.
-    #
-    #     :type domain_name: str
-    #     :param domain_name: The name of the domain. This should be a
-    #         fully-specified domain, and should end with a final period
-    #         as the last label indication.
-    #
-    #     :type caller_ref: str
-    #     :param caller_ref: A unique string that identifies the request
-    #         and that allows failed CreateHostedZone requests to be retried
-    #         without the risk of executing the operation twice.
-    #
-    #     :type comment: str
-    #     :param comment: Any comments you want to include about the hosted
-    #         zone.
-    #
-    #     """
-    #     if caller_ref is None:
-    #         caller_ref = str(uuid.uuid4())
-    #     params = {'name': domain_name,
-    #               'caller_ref': caller_ref,
-    #               'comment': comment,
-    #               'xmlns': self.XMLNameSpace}
-    #     xml_body = HZXML % params
-    #     uri = '/%s/hostedzone' % self.Version
-    #     response = self.send_request('POST', uri,
-    #                                  {'Content-Type': 'text/xml'}, xml_body)
-    #     body = response.read()
-    #     log.debug(body)
-    #
-    #     if response.status == 201:
-    #         e = xml_response.Element(list_marker='NameServers',
-    #                                  item_marker=('NameServer',))
-    #         h = xml_response.XmlHandler(e, None)
-    #         h.parse(body)
-    #         return e
-    #     else:
-    #         raise exception.UnsuccessfulRequestError(response.status,
-    #                                        response.reason,
-    #                                        body)
-
-    # def delete_hosted_zone(self, hosted_zone_id):
-    #     """
-    #     Delete the hosted zone specified by the given id.
-    #
-    #     :type hosted_zone_id: str
-    #     :param hosted_zone_id: The hosted zone's id
-    #
-    #     """
-    #     uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
-    #     response = self.send_request('DELETE', uri)
-    #     body = response.read()
-    #     log.debug(body)
-    #
-    #     if response.status not in (200, 204):
-    #         raise exception.UnsuccessfulRequestError(response.status,
-    #                                        response.reason,
-    #                                        body)
-    #     e = xml_response.Element()
-    #     h = xml_response.XmlHandler(e, None)
-    #     h.parse(body)
-    #     return e
-
     def get_all_rrsets(self, hosted_zone_id, type=None,
                        name=None, identifier=None, maxitems=None):
         """
@@ -299,24 +233,6 @@ class Route53Connection(AWSConnection):
         h = xml_response.XmlHandler(e, None)
         h.parse(body)
         return e
-
-    def create_zone(self, name):
-        """
-        Create a new Hosted Zone.  Returns a Zone object for the newly
-        created Hosted Zone.
-
-        :type name: str
-        :param name: The name of the domain. This should be a
-            fully-specified domain, and should end with a final period
-            as the last label indication.  If you omit the final period,
-            Amazon Route 53 assumes the domain is relative to the root.
-            This is the name you have registered with your DNS registrar.
-            It is also the name you will delegate from your registrar to
-            the Amazon Route 53 delegation servers returned in
-            response to this request.
-        """
-        zone = self.create_hosted_zone(name)
-        return Zone(self, zone['CreateHostedZoneResponse']['HostedZone'])
 
     def get_zone(self, name):
         """

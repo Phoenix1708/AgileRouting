@@ -227,7 +227,14 @@ def sync_files(host_ip, username, host_file_path, pk_path, dst_loc,
 
 def print_message(msg):
     thread_id = threading.current_thread().name
-    print '[%s]: %s' % (thread_id, msg)
+    string_to_print = '[%s]: %s' % (thread_id, msg)
+    print string_to_print
+    log_info('running_log.txt', string_to_print+'\n')
+
+
+def log_info(log_file_name, data_to_write):
+    with open(log_file_name, 'wa') as f:
+        f.write(data_to_write+'\n')
 
 
 def get_expected_num_logs():

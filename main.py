@@ -1,14 +1,19 @@
 from __future__ import division
 import time
 import math
+from connection.route_53_connection import Route53Connection
 from data_parser.client_server.server_log_processor import process_server_logs
 from data_parser.optimization import optimise
 from data_parser.s3.process_access_log import process_elb_access_log
 from etc.configuration import setup_logging, cfg
+from models.resource_record_set import ResourceRecordSets
 from utilities.multi_threading import ThreadingManager
 from utilities.utils import get_station_region, get_stations, \
     calculate_waiting_time, get_stations_bandwidth, get_elb_buckets_map, \
-    print_message
+    print_message, log_info
+
+
+base_domain = 'agilerouting.net'
 
 
 def main():
@@ -99,6 +104,9 @@ def main():
         arrival_rates = dict()
         service_rates = dict()
 
+        # name of the file that record metrics
+        metric_record_file = 'Metrics.txt'
+
         for service_station_metric in service_station_metric_list:
             # getting metric
             station_name = service_station_metric.station_name
@@ -110,6 +118,10 @@ def main():
             print '\nTotal requests for station %s: %s' \
                   % (station_name, requests)
 
+            log_info(metric_record_file,
+                     '\nTotal requests for station %s: %s'
+                     % (station_name, requests))
+
             # arrival_rate and service_rate
             arrival_rates.update({station_name: arrival_rate})
             service_rates.update({station_name: service_rate})
@@ -119,6 +131,10 @@ def main():
                                               arrival_rate)
             print '[Debug] predicted response time of service station ' \
                   '\'%s\': %s' % (station_name, response_time)
+
+            log_info(metric_record_file,
+                     '[Debug] predicted response time of service station '
+                     '\'%s\': %s' % (station_name, response_time))
 
             # calculate average data sent and receive
             d_in = data_in.get(station_name)
@@ -135,17 +151,30 @@ def main():
             avg_data_out_per_reqs.update({station_name: avg_data_out_per_req})
 
         # For testing purpose
-        print '\n[Debug] total_request: %s' % total_request
-        print '[Debug] avg_data_in_per_reqs: %s' % avg_data_in_per_reqs
-        print '[Debug] avg_data_out_per_reqs: %s' % avg_data_out_per_reqs
-        print '[Debug] arrival_rates: %s' % arrival_rates
-        print '[Debug] service_rates: %s\n' % service_rates
+        info_str = \
+            '\n[Debug] total_request: %s\n' \
+            '[Debug] avg_data_in_per_reqs: %s\n' \
+            '[Debug] avg_data_out_per_reqs: %s\n' \
+            '[Debug] arrival_rates: %s\n' \
+            '[Debug] service_rates: %s\n' \
+            % (total_request,
+               avg_data_in_per_reqs,
+               avg_data_out_per_reqs,
+               arrival_rates, service_rates)
+
+        print info_str
+        # print '\n[Debug] total_request: %s' % total_request
+        # print '[Debug] avg_data_in_per_reqs: %s' % avg_data_in_per_reqs
+        # print '[Debug] avg_data_out_per_reqs: %s' % avg_data_out_per_reqs
+        # print '[Debug] arrival_rates: %s' % arrival_rates
+        # print '[Debug] service_rates: %s\n' % service_rates
+
+        log_info(metric_record_file, info_str)
 
         # counter += 1
         # time.sleep(20)
 
-        # TODO: Delay service level agreement, cost budget
-        # TODO: print out delay
+        # TODO: Get elb price and SLA from config
 
         # ELB pricing
         elb_prices = [0.008, 0.008]
@@ -160,7 +189,8 @@ def main():
         sla_response_t = [1.5, 1.5]
 
         in_band_dict, out_band_dict = get_stations_bandwidth()
-        # convert to GB/s
+
+        # Budget 100,000 / 30 / 24 / 60 / interval
 
         for station in stations:
             # convert from Mb/s to GB/s
@@ -184,25 +214,46 @@ def main():
                            measurement_interval=measurement_interval, k=-10)
         print weights
 
-        # base_domain = 'agilerouting.net'
-        #
-        # conn = Route53Connection()
-        # zone = conn.get_zone(base_domain)
-        #
-        # print zone
-        #
-        # Ireland_ELB = \
-        # 'dualstack.xueshi-ofbench-servers-1324038295
-        # .eu-west-1.elb.amazonaws.com.'
-        #
-        # base_record = dict(name="www.%s" % base_domain,
-        # type="A", weight=weight_a,
-        # identifier="Ireland")
-        #
-        # rrs = ResourceRecordSets(conn, zone.id)
-        # new = rrs.add_change(action="UPSERT", **base_record)
-        # new.set_alias('Z32O12XQLNTSW2', Ireland_ELB, False)
-        # change_result = rrs.commit()
+        route53_conn = Route53Connection()
+        zone = route53_conn.get_zone(base_domain)
+
+        # TODO: automatically get records
+        elb_records = \
+            {'xueshi-station-1':
+
+             ('Ireland', 'dualstack.xueshi-station-1-755376809.eu-west-1.elb'
+                         '.amazonaws.com.'),
+
+             'xueshi-station-2':
+
+             ('north_virginia',
+              'dualstack.xueshi-station-2-1872136534.us-east-1.elb'
+              '.amazonaws.com.')}
+
+        alias_zone_id = {'xueshi-station-1': 'Z32O12XQLNTSW2',
+                         'xueshi-station-2': 'Z35SXDOTRQ7X7K'}
+
+        # Since we put optimisation parameter by the order available stations
+        # the output weights should be in the same order
+        station_weights = {}
+        for idx in len(stations):
+            station_weights.update({stations[idx]: weights['x'][idx]})
+
+        for s_name, weights_val in station_weights.iteritems():
+            identifier = elb_records[s_name][0]
+            alias_dns_name = elb_records[s_name][1]
+            host_zone_id = alias_zone_id[s_name]
+
+            base_record = dict(name="www.%s" % base_domain,
+                               type="A", weight=weights_val,
+                               identifier=identifier)
+
+            rrs = ResourceRecordSets(route53_conn, zone.id)
+            new = rrs.add_change(action="UPSERT", **base_record)
+            new.set_alias(host_zone_id, alias_dns_name, False)
+            change_result = rrs.commit()
+
+        log_info(metric_record_file, 'Station weights: %s' % station_weights)
 
 
 if __name__ == "__main__":

@@ -326,6 +326,7 @@ def optimise(num_of_stations, total_requests, elb_prices,
         # print_message('Total cost : %s $' % (cost_coef + 192.6))
         # #### test ####
 
+        #TODO: plus previous value ?
         cost_coef = \
             total_requests * (avg_data_in_per_reqs[i] +
                               avg_data_out_per_reqs[i]) * elb_prices[i] + \
@@ -416,12 +417,18 @@ def optimise(num_of_stations, total_requests, elb_prices,
 
 
 # if __name__ == '__main__':
-    # A = matrix([[-1.0, -1.0, 0.0, 1.0], [1.0, -1.0, -1.0, -2.0]])
-    # b = matrix([1.0, -2.0, 0.0, 4.0])
-    # c = matrix([2.0, 1.0])
-    # sol = solvers.lp(c, A, b)
-    #
-    # print(sol['x'])
+#     A = matrix([[-1.0, -1.0, 0.0, 1.0], [1.0, -1.0, -1.0, -2.0]])
+#     b = matrix([1.0, -2.0, 0.0, 4.0])
+#     c = matrix([2.0, 1.0])
+#     sol = solvers.lp(c, A, b)
+#
+#     print(sol['x'])
+#     test = [sol['x'][i] for i in xrange(2)]
+#     print test
+#     print sol['x'][0]
+#     print sol['x'][1]
+#     print sol['x'][2]
+
     # coefficients = [[
     #      0,
     #      1.5316553365099901e-07,
