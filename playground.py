@@ -15,7 +15,7 @@
 # print('Weather forecast for %s, %s:' % (fc_return.City, fc_return.State))
 # for fc in fc_return.ForecastResult.Forecast:
 # when = time.strftime('%A, %B %d %Y', fc.Date.timetuple())
-#         outlook = fc.Desciption # typos in WSDL left unchanged
+# outlook = fc.Desciption # typos in WSDL left unchanged
 #         low = fc.Temperatures.MorningLow
 #         high = fc.Temperatures.DaytimeHigh
 #         print('  %s: %s, from %s to %s' % (when, outlook, low, high))
@@ -243,116 +243,143 @@ class People():
 
 if __name__ == '__main__':
 
-    line_counter = 2
-    with open('test1.log') as f:
+    import subprocess
 
-            count = 0  # counter for skip to the line left over last time
+    p = subprocess.Popen(["ping", "-c 5", "54.75.105.72"],
+                         stdout=subprocess.PIPE)
+    out, err = p.communicate()
 
-            for current_line in f:
-                if count == int(line_counter):
-                    break
-                count += 1
+    rt_str = [text for text in out.split('\n')
+              if 'round-trip min/avg/max/stddev' in text]
 
-            print 'skipped %s lines' % count
-            # Skip to the line after ObserverReceivedTimestamp
-            for current_line in f:
-                print 'Current line: %s' % current_line
+    stat_str = rt_str[0].split('=')
+    metric_name = stat_str[0]
+    values = stat_str[1].split('/')
+    avg_idx = metric_name.split('/').index('avg')
 
-    # people_list = []
-    # for i in xrange(4):
-    #     people_list.append(People(i, 'm', None))
-    #
-    # print people_list[3].name
-    #
-    # for people in people_list:
-    #     people.name = 'working'
-    #
-    # print people_list[3].name
+    print 'avg delay: %s' % values[avg_idx]
 
-    # import matplotlib.pyplot as plt
-    # # plt.plot([10, 46, 57, 53, 96, 84, 69, 32, 76, 75, 75, 41, 81, 72, 82, 87, 75, 88, 81, 71, 78, 73, 86],
-    # #          [0.63596104468606618, 0.53382497842738474, 0.44665312050855638,
-    # #           0.50425042179148949, 0.59940747153615193, 0.43193619437859054,
-    # #           0.30932259318304062, 0.509965104692778, 0.42435147551362551,
-    # #           0.42763853503989019, 0.34476941912023856, 0.42775079951245287, 0.44366271156871123, 0.433875409317387, 0.43874053324869589, 0.46013443978049479, 0.49944519850463537, 0.47975126542558055, 0.4838644743428086, 0.45508512584449157, 0.41110725268916543, 0.45449157989237793, 0.40021804803670719],
-    # #          'o')
-    # # plt.show()
+    # import os
     #
-    # plt.plot([8, 35, 29, 50, 51, 30],
-    #          [0.58125925094046071, 0.74447566950239996, 0.83113617056952838,
-    #           0.69228760533235711, 0.57027730844784785, 0.50826348265944499],
-    #          'o')
-    # plt.show()
-    # para_dict = {'tm_year': 2014,
-    #              'tm_mon': 7,
-    #              'tm_mday': 1,
-    #              'tm_hour': 9,
-    #              'tm_min': 25,
-    #              'tm_sec': 48,
-    #              'tm_wday': 1,
-    #              'tm_yday': 182,
-    #              'tm_isdst': -1}
-    # test = time.struct_time(kwargs=para_dict)
-    # print test
+    # hostname = "54.75.105.72"  # example
+    # response = os.system("ping " + hostname)
+    #
+    # #and then check the response...
+    # if response == 0:
+    #     print hostname, 'is up!'
+    # else:
+    #     print hostname, 'is down!'
 
-    # queue = Queue.Queue()
-    # queue.put(123)
-    # queue.put(456)
-    # for job in iter(queue.get, None):
-    #     print job
+        # line_counter = 2
+        # with open('test1.log') as f:
+        #
+        #         count = 0  # counter for skip to the line left over last time
+        #
+        #         for current_line in f:
+        #             if count == int(line_counter):
+        #                 break
+        #             count += 1
+        #
+        #         print 'skipped %s lines' % count
+        #         # Skip to the line after ObserverReceivedTimestamp
+        #         for current_line in f:
+        #             print 'Current line: %s' % current_line
 
-    # bucket_name = u'xueshi-ireland-elb-logs'
-    # c = S3Connection()
-    # bucket = c.get_bucket(bucket_name)
-    #
-    # # keys = bucket.get_all_keys()
-    # # for key in keys:
-    # #     print "{name}\t{size}\t{modified}".format(
-    # #         name=key.name,
-    # #         size=key.size,
-    # #         modified=key.last_modified,
-    # #     )
-    #
-    # # key = bucket.get_key(u'AWSLogs/305933725014/elasticloadbalancing/'
-    # #                      u'eu-west-1/2014/07/21/305933725014_'
-    # #                      u'elasticloadbalancing_eu-west-1_'
-    # #                      u'xueshi-ofbench-servers_'
-    # #                      u'20140721T2115Z_54.228.193.7_5nrglkcr.log')
-    #
-    # response_headers = {'prefix': u'AWSLogs/305933725014/elasticloadbalancing/'
-    #                               u'eu-west-1/2014/07/21/305933725014_'
-    #                               u'elasticloadbalancing_eu-west-1_'
-    #                               u'xueshi-ofbench-servers_'
-    #                               u'20140721T2115Z_54.228.193.7',
-    #                     'delimiter': '.log'}
-    #
-    # list_bucket_results = bucket.search_key(parameters=response_headers)
-    #
-    # key_name = list_bucket_results.common_prefixes.prefix
-    #
-    # key = bucket.get_key(key_name=key_name)
-    #
-    # """
-    # AWSLogs/305933725014/elasticloadbalancing/eu-west-1/2014/07/21/
-    # 305933725014_elasticloadbalancing_eu-west-1_xueshi-ofbench-servers_
-    # 20140721T2115Z_54.228.193.7_5nrglkcr.log
-    #
-    # {Bucket}/{Prefix}/AWSLogs/{AWS AccountID}/elasticloadbalancing/{Region}/
-    # {Year}/{Month}/{Day}/{AWS Account ID}_elasticloadbalancing_{Region}_
-    # {Load Balancer Name}_{End Time}_{Load Balancer IP}_{Random String}.log
-    #
-    # """
-    #
-    # with open('test1.log', 'w') as fp:
-    #     key.get_contents_to_file(fp)
-    #
-    # # for key in bucket.list():
-    # #     print "{name}\t{size}\t{modified}".format(
-    # #         name=key.name,
-    # #         size=key.size,
-    # #         modified=key.last_modified,
-    # #     )
-    #
-    # all_subclass = SuperClass.__subclasses__()
-    # print 'done'
-    #main()
+        # people_list = []
+        # for i in xrange(4):
+        #     people_list.append(People(i, 'm', None))
+        #
+        # print people_list[3].name
+        #
+        # for people in people_list:
+        #     people.name = 'working'
+        #
+        # print people_list[3].name
+
+        # import matplotlib.pyplot as plt
+        # # plt.plot([10, 46, 57, 53, 96, 84, 69, 32, 76, 75, 75, 41, 81, 72, 82, 87, 75, 88, 81, 71, 78, 73, 86],
+        # #          [0.63596104468606618, 0.53382497842738474, 0.44665312050855638,
+        # #           0.50425042179148949, 0.59940747153615193, 0.43193619437859054,
+        # #           0.30932259318304062, 0.509965104692778, 0.42435147551362551,
+        # #           0.42763853503989019, 0.34476941912023856, 0.42775079951245287, 0.44366271156871123, 0.433875409317387, 0.43874053324869589, 0.46013443978049479, 0.49944519850463537, 0.47975126542558055, 0.4838644743428086, 0.45508512584449157, 0.41110725268916543, 0.45449157989237793, 0.40021804803670719],
+        # #          'o')
+        # # plt.show()
+        #
+        # plt.plot([8, 35, 29, 50, 51, 30],
+        #          [0.58125925094046071, 0.74447566950239996, 0.83113617056952838,
+        #           0.69228760533235711, 0.57027730844784785, 0.50826348265944499],
+        #          'o')
+        # plt.show()
+        # para_dict = {'tm_year': 2014,
+        #              'tm_mon': 7,
+        #              'tm_mday': 1,
+        #              'tm_hour': 9,
+        #              'tm_min': 25,
+        #              'tm_sec': 48,
+        #              'tm_wday': 1,
+        #              'tm_yday': 182,
+        #              'tm_isdst': -1}
+        # test = time.struct_time(kwargs=para_dict)
+        # print test
+
+        # queue = Queue.Queue()
+        # queue.put(123)
+        # queue.put(456)
+        # for job in iter(queue.get, None):
+        #     print job
+
+        # bucket_name = u'xueshi-ireland-elb-logs'
+        # c = S3Connection()
+        # bucket = c.get_bucket(bucket_name)
+        #
+        # # keys = bucket.get_all_keys()
+        # # for key in keys:
+        # #     print "{name}\t{size}\t{modified}".format(
+        # #         name=key.name,
+        # #         size=key.size,
+        # #         modified=key.last_modified,
+        # #     )
+        #
+        # # key = bucket.get_key(u'AWSLogs/305933725014/elasticloadbalancing/'
+        # #                      u'eu-west-1/2014/07/21/305933725014_'
+        # #                      u'elasticloadbalancing_eu-west-1_'
+        # #                      u'xueshi-ofbench-servers_'
+        # #                      u'20140721T2115Z_54.228.193.7_5nrglkcr.log')
+        #
+        # response_headers = {'prefix': u'AWSLogs/305933725014/elasticloadbalancing/'
+        #                               u'eu-west-1/2014/07/21/305933725014_'
+        #                               u'elasticloadbalancing_eu-west-1_'
+        #                               u'xueshi-ofbench-servers_'
+        #                               u'20140721T2115Z_54.228.193.7',
+        #                     'delimiter': '.log'}
+        #
+        # list_bucket_results = bucket.search_key(parameters=response_headers)
+        #
+        # key_name = list_bucket_results.common_prefixes.prefix
+        #
+        # key = bucket.get_key(key_name=key_name)
+        #
+        # """
+        # AWSLogs/305933725014/elasticloadbalancing/eu-west-1/2014/07/21/
+        # 305933725014_elasticloadbalancing_eu-west-1_xueshi-ofbench-servers_
+        # 20140721T2115Z_54.228.193.7_5nrglkcr.log
+        #
+        # {Bucket}/{Prefix}/AWSLogs/{AWS AccountID}/elasticloadbalancing/{Region}/
+        # {Year}/{Month}/{Day}/{AWS Account ID}_elasticloadbalancing_{Region}_
+        # {Load Balancer Name}_{End Time}_{Load Balancer IP}_{Random String}.log
+        #
+        # """
+        #
+        # with open('test1.log', 'w') as fp:
+        #     key.get_contents_to_file(fp)
+        #
+        # # for key in bucket.list():
+        # #     print "{name}\t{size}\t{modified}".format(
+        # #         name=key.name,
+        # #         size=key.size,
+        # #         modified=key.last_modified,
+        # #     )
+        #
+        # all_subclass = SuperClass.__subclasses__()
+        # print 'done'
+        #main()

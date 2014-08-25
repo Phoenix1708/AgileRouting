@@ -10,6 +10,7 @@ import urllib2
 import math
 
 from datetime import datetime
+import paramiko
 from etc.configuration import log, cfg
 from utilities.exception import GeneralError
 from utilities.request_headers import HEADER_PREFIX_KEY, DATE_HEADER_KEY, \
@@ -60,7 +61,7 @@ def get_env(env_var_name):
 
 
 # def get_ip(host_name):
-#     ip = cfg.get('IPs', host_name, None)
+# ip = cfg.get('IPs', host_name, None)
 #     if not ip:
 #         raise GeneralError(msg="No IP configuration
 #                               found for host name \'%s\'."
@@ -77,38 +78,64 @@ def get_env(env_var_name):
 #     return elb_bucket
 
 
-def get_config_value(section, entry_key):
-    cfg_value = cfg.get(section, entry_key, None)
-    if not cfg_value:
-        raise GeneralError(msg="No %s configuration found for "
-                               "\'%s\' " % (section, entry_key))
-    return cfg_value
+# def get_config_value(section, entry_key):
+#     cfg_value = cfg.get(section, entry_key, None)
+#     if not cfg_value:
+#         raise GeneralError(msg="No %s configuration found for "
+#                                "\'%s\' " % (section, entry_key))
+#     return cfg_value
 
 
-def get_stations():
-
-    # return ['xueshi-station-1']  # Test
+def get_available_stations():
+    # TODO: needs to be dynamic in the future
     return ['xueshi-station-1', 'xueshi-station-2']
 
 
-def get_stations_bandwidth():
+def get_available_clients():
+    # TODO: needs to be dynamic in the future
+    return ['AP_SOUTH_1_CLIENT_1', 'US_EAST_1_CLIENT_1']
 
-    available_stations = get_stations()
+
+def get_stations_bandwidth(client):
+    """
+    Get the in and out bandwidth between a particular client (in a
+    particular region) and all service stations
+
+    :param client:  Name / Identifier of the client
+    :return:
+    """
+
+    available_stations = get_available_stations()
+
     station_in_band_map = station_metadata_map['in_bandwidths']
     station_out_band_map = station_metadata_map['out_bandwidths']
 
     available_station_in_band_map = dict()
     available_station_out_band_map = dict()
 
-    for avail_station in available_stations:
+    for client_station_pair, in_band_val in station_in_band_map.iteritems():
+        if client in client_station_pair:
+            for avail_station in available_stations:
+                if avail_station in k:
+                    available_station_in_band_map.update(
+                        {avail_station: in_band_val})
 
-        if station_in_band_map[avail_station]:
-            available_station_in_band_map.update(
-                {avail_station: station_in_band_map[avail_station]})
+    for client_station_pair, out_band_val in station_out_band_map.iteritems():
+        if client in client_station_pair:
+            for avail_station in available_stations:
+                if avail_station in k:
+                    available_station_out_band_map.update(
+                        {avail_station: out_band_val})
 
-        if station_out_band_map[avail_station]:
-            available_station_out_band_map.update(
-                {avail_station: station_out_band_map[avail_station]})
+    # for avail_station in available_stations:
+    #
+    #     if station_in_band_map[avail_station]:
+    #         available_station_in_band_map.update(
+    #             {avail_station: station_in_band_map[avail_station]})
+    #
+    #     if station_out_band_map[avail_station]:
+    #         available_station_out_band_map.update(
+    #             {avail_station: station_out_band_map[avail_station]})
 
     return available_station_in_band_map, available_station_out_band_map
 
@@ -121,7 +148,7 @@ def get_elb_buckets_map():
 
     :return: station elb log s3 bucket mapping
     """
-    available_stations = get_stations()
+    available_stations = get_available_stations()
     station_elb_log_map = station_metadata_map['s3_bucket']
 
     available_station_elb_log_map = dict()
@@ -141,7 +168,7 @@ def get_station_region():
     :return: station region mapping
     """
 
-    available_stations = get_stations()
+    available_stations = get_available_stations()
     station_region_map = station_metadata_map['region']
 
     available_station_region_map = dict()
@@ -162,13 +189,14 @@ def get_station_csparql():
     :return: station observer ip mapping
     """
 
-    available_stations = get_stations()
+    available_stations = get_available_stations()
     station_ip_map = station_metadata_map['ip']
 
     available_station_ip_map = dict()
     for avail_station in available_stations:
+        key_str = '%s_observer' % avail_station
         available_station_ip_map.update(
-            {avail_station: station_ip_map[avail_station]})
+            {avail_station: station_ip_map[key_str]})
 
     return available_station_ip_map
 
@@ -229,12 +257,12 @@ def print_message(msg):
     thread_id = threading.current_thread().name
     string_to_print = '[%s]: %s' % (thread_id, msg)
     print string_to_print
-    log_info('running_log.txt', string_to_print+'\n')
+    log_info('running_log.txt', string_to_print + '\n')
 
 
 def log_info(log_file_name, data_to_write):
     with open(log_file_name, 'wa') as f:
-        f.write(data_to_write+'\n')
+        f.write(data_to_write + '\n')
 
 
 def get_expected_num_logs():
@@ -296,13 +324,53 @@ def calculate_waiting_time():
         = get_next_nth_elb_log_time(expected_logs_to_obtain)
 
     # from UTC to GMT hour + 1
-    time_str = ''.join([str(year), str(month), str(day), str(hour+1),
+    time_str = ''.join([str(year), str(month), str(day), str(hour + 1),
                         str(int(next_expected_logging_minute))])
     date = datetime.strptime("".join(time_str), '%Y%m%d%H%M')
     date_milli = time.mktime(date.timetuple()) + date.microsecond
     # calculate waiting time
     waiting_time = (date_milli - start_time)
     return waiting_time
+
+
+def execute_remote_command(host_address, username, password,
+                           command, private_key=None):
+    # connect to the host
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(host_address, username=username, password=password,
+                key_filename=private_key)
+    stdin, stdout, stderr = ssh.exec_command(command)
+
+    print_message('')
+    print_message("[Debug] Executing \'%s\' on host: %s"
+                  % (command, host_address))
+
+    # if output and standard error hasn't been read off before
+    # buffer is full the host will hang
+    output = None
+    error = None
+    output_str = ""
+    error_str = ""
+
+    while output != "":
+        output = stdout.readline()
+        # print output while reading
+        if output:
+            # print output
+            output_str += output
+
+    while error != "":
+        error = stderr.readline()
+        error_str += error
+
+    # print error at the end
+    if error_str:
+        print_message(error_str)
+
+    ssh.close()
+
+    return [output_str, error_str]
 
 
 def pythonize_name(name):
@@ -466,7 +534,7 @@ def canonical_string(method, path, headers, expires=None):
         lk = key.lower()
         if headers[key] is not None and \
                 (lk in ['content-md5', 'content-type', 'date'] or
-                     lk.startswith(HeaderInfoMap[HEADER_PREFIX_KEY])):
+                 lk.startswith(HeaderInfoMap[HEADER_PREFIX_KEY])):
             interesting_headers[lk] = str(headers[key]).strip()
 
     # these keys get empty strings if they don't exist
@@ -535,22 +603,32 @@ station_metadata_map = {
 
     'out_bandwidths': {
 
+    },
+
+    'StationELBDNS': {
+        'xueshi-station-1': 'dualstack.xueshi-station-1-755376809.eu-west-1.elb'
+                            '.amazonaws.com',
+        'xueshi-station-2': 'dualstack.xueshi-station-2-1872136534.us-east-1'
+                            '.elb.amazonaws.com'
     }
 }
 
-stations = get_stations()
-for station in stations:
-    elb_bucket = get_config_value('ELBBucket', station)
-    station_metadata_map['s3_bucket'].update({station: elb_bucket})
+elb_bucket = dict(cfg.items('ELBBucket'))
+for k, v in elb_bucket.iteritems():
+    station_metadata_map['s3_bucket'].update({k: v})
 
-    ip_config_str = station+'_observer_ip'
-    observer_ip = get_config_value('IPs', ip_config_str)
-    station_metadata_map['ip'].update({station: observer_ip})
+ips = dict(cfg.items('IPs'))
+for k, v in ips.iteritems():
+    station_metadata_map['ip'].update({k: v})
 
-    in_bandwidth = get_config_value('InBandwidths', station)
-    station_metadata_map['in_bandwidths'].update({station: int(in_bandwidth)})
+# in_bandwidth = get_config_value('InBandwidths', station)
+in_bandwidth = dict(cfg.items('InBandwidths'))
+for k, v in in_bandwidth.iteritems():
+    station_metadata_map['in_bandwidths'].update({k: v})
 
-    out_bandwidth = get_config_value('OutBandwidths', station)
-    station_metadata_map['out_bandwidths'].update({station: int(out_bandwidth)})
+# out_bandwidth = get_config_value('OutBandwidths', station)
+out_bandwidth = dict(cfg.items('OutBandwidths'))
+for k, v in out_bandwidth.iteritems():
+    station_metadata_map['out_bandwidths'].update({k: v})
 
 # print station_metadata_map

@@ -3,7 +3,7 @@ import time
 
 import numpy
 
-from data_parser import client_server
+import Resources
 from data_parser.client_server.data_generation import generate_data
 from etc.configuration import cfg
 from utilities.utils import sync_files, print_message
@@ -304,7 +304,11 @@ def calculate_metrics(data_list):
         para_tuple = {'vm_name': vm_name, 'num_of_requests': num_of_requests,
                       'data': data}
 
-        cpu_core = cfg.get('VMSpec', vm_name)
+        vm_cpu_spec = dict(cfg.items('VMSpec'))
+        cpu_core = [vm_cpu_spec[spec] for spec in vm_cpu_spec.keys()
+                    if spec in vm_name]
+
+        # cpu_core = cfg.get('VMSpec', vm_name)
         if not cpu_core:
             print 'No specification configured for VM \'%s\'' % vm_name
             return
@@ -345,16 +349,16 @@ def process_monitor_log(base_dir, observer_addr, line_counter, queue):
 
     monitor_log_path = base_dir + 'observer_log.txt'
 
-    # Flag indicates whether the log contains useful data or not
-    log_has_info = False
+    # Flag indicates whether the logs of all servers contain useful data or not
+    all_has_info = False
 
-    while not log_has_info:
+    while not all_has_info:
 
         print_message('')
         print_message('Synchronising log from observer at: %s' % observer_ip)
 
-        module_path = os.path.dirname(client_server.__file__)
-        private_key_file_path = module_path + '/logs/ec2_private_key'
+        module_path = os.path.dirname(Resources.__file__)
+        private_key_file_path = module_path + '/ec2_private_key'
 
         sync_files(host_ip=observer_ip, username='ubuntu',
                    host_file_path='~/results.txt',
@@ -365,8 +369,13 @@ def process_monitor_log(base_dir, observer_addr, line_counter, queue):
         result_queue = generate_data(parsed_log_dir)
 
         # observer log has contain ResponseInfo if the queue if not empty
-        if not result_queue.empty():
-            log_has_info = True
+
+        # check all server has response info
+        # TODO: the number of server can be read from config
+        if result_queue.qsize() > 1:
+            all_has_info = True
+        else:
+            time.sleep(5)
 
     data_list = []
     while not result_queue.empty():

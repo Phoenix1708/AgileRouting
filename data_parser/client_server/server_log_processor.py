@@ -3,14 +3,11 @@ import os
 import time
 import math
 
-from datetime import datetime
-
 from data_parser import client_server
 from data_parser.client_server.monitor_log_parser import process_monitor_log
 from data_parser.client_server.service_rate import calculate_service_rate
 from utilities.multi_threading import ThreadingManager
-from utilities.utils import get_station_csparql, print_message, \
-    get_expected_num_logs, get_next_nth_elb_log_time
+from utilities.utils import get_station_csparql, print_message
 
 
 class ServiceStationMetric:

@@ -6,7 +6,7 @@ from connection.s3_connection import S3Connection
 from etc.configuration import cfg
 from utilities.multi_threading import ThreadingManager
 from utilities.utils import print_message, get_expected_num_logs, \
-    get_next_nth_elb_log_time
+    get_next_nth_elb_log_time, get_available_clients, station_metadata_map
 
 
 log_polling_interval = cfg.get_int('s3', 'log_polling_interval', 60)
@@ -22,11 +22,32 @@ class DataAccumulatorManager(ThreadingManager):
     def __init__(self):
         ThreadingManager.__init__(self)
         self.data_sum = 0
+        self.client_sent = dict()
+        self.client_receive = dict()
+        self.available_client = get_available_clients()
+
+        self.client_ips_name_pair = dict()
+        for client_name in self.available_client:
+            self.client_ips_name_pair.update(
+                {station_metadata_map['ip'][client_name]: client_name})
+            # initialisation
+            self.client_sent.update({client_name: 0})
+            self.client_receive.update({client_name: 0})
+
         self.total_sent = 0
         self.total_receive = 0
 
-    @staticmethod
-    def read_log(key, log_file_path, queue):
+    def read_log(self, key, log_file_path, queue):
+
+        client_in_dict = dict()
+        client_out_dict = dict()
+
+        for client_name in self.available_client:
+            self.client_ips_name_pair.update(
+                {station_metadata_map['ip'][client_name]: client_name})
+            # initialisation
+            client_in_dict.update({client_name: 0})
+            client_out_dict.update({client_name: 0})
 
         # download the log content
         with open(log_file_path, 'w') as fp:
@@ -49,22 +70,37 @@ class DataAccumulatorManager(ThreadingManager):
                 if len(split_str) < 11:
                     continue
 
+                # ip -> name -> record data for each name
+                client_ip = split_str[2].split(":")[0]
+                c_name = self.client_ips_name_pair[client_ip]
+
                 received_byte = int(split_str[9])
                 sent_byte = int(split_str[10])
+
+                client_in_dict[c_name] += received_byte
+                client_out_dict[c_name] += sent_byte
 
                 total_receive += received_byte
                 total_sent += sent_byte
 
-        queue.put('%s,%s' % (total_receive, total_sent))
+        queue.put('%s,%s' % (client_in_dict, client_out_dict))
+        # queue.put('%s,%s' % (total_receive, total_sent))
 
     def collect_results(self):
         queue = super(DataAccumulatorManager, self).collect_results()
         while not queue.empty():
-            sent, receive = queue.get().split(',')
-            self.total_sent += int(sent)
-            self.total_receive += int(receive)
+            c_sent, c_receive = queue.get().split(',')
 
-        return '%s,%s' % (self.total_receive, self.total_sent)
+            for c_name, data_sent in c_sent.iteritems():
+                self.client_sent[c_name] += data_sent
+
+            for c_name, data_received in c_receive.iteritems():
+                self.client_receive[c_name] += data_received
+
+            # self.total_sent += int(sent)
+            # self.total_receive += int(receive)
+
+        # return '%s,%s' % (self.total_receive, self.total_sent)
 
 
 def calculate_key_prefix(elb_region, elb_name):
@@ -76,7 +112,7 @@ def calculate_key_prefix(elb_region, elb_name):
     """
     print_message('Retrieving access log for %s ...' % elb_name)
 
-    day, hour, month, next_expected_logging_minute, year\
+    day, hour, month, next_expected_logging_minute, year \
         = get_next_nth_elb_log_time(1)
 
     # convert month, day, hour and minute to 2 digit representation
@@ -135,8 +171,24 @@ def process_access_log(bucket, elb_region, elb_name):
 
     # total amount of data processed by the elb within the measurement interval
     # total_data = 0
-    total_sent = 0
-    total_receive = 0
+    # total_sent = 0
+    # total_receive = 0
+
+    # client_in_dict = dict()
+    # client_out_dict = dict()
+    #
+    # available_client = get_available_clients()
+    #
+    # client_ips_name_pair = dict()
+    # for client_name in available_client:
+    #     client_ips_name_pair.update(
+    #         {station_metadata_map['ip'][client_name]: client_name})
+    #     # initialisation
+    #     client_in_dict.update({client_name: 0})
+    #     client_out_dict.update({client_name: 0})
+
+    # Start new threads for downloading and reading each matching log file
+    data_accumulator = DataAccumulatorManager()
 
     # record the start time to calculate time elapsed
     # start_time = time.time()
@@ -194,9 +246,6 @@ def process_access_log(bucket, elb_region, elb_name):
             time.sleep(log_polling_interval)
             time_counter += log_polling_interval
 
-        # Start new threads for downloading and reading each matching log file
-        data_accumulator_manager = DataAccumulatorManager()
-
         for key_name in matching_keys:
             key = bucket.get_key(key_name=key_name)
 
@@ -211,20 +260,30 @@ def process_access_log(bucket, elb_region, elb_name):
             log_file_path = log_file_path_dir + '/' + log_file_name
 
             # download and process the each log file simultaneously
-            data_accumulator_manager.start_tasks(
-                data_accumulator_manager.read_log,
-                'data_accumulator', (key, log_file_path))
+            data_accumulator.start_tasks(data_accumulator.read_log,
+                                         'data_accumulator',
+                                         (key, log_file_path))
 
         # Collect results from each threads
-        sent, receive = data_accumulator_manager.collect_results().split(',')
-        total_sent += int(sent)
-        total_receive += int(receive)
+        data_accumulator.collect_results().split(',')
+
+        # sent, receive = data_accumulator_manager.collect_results().split(',')
+        #
+        # total_sent += int(sent)
+        # total_receive += int(receive)
+
+        print_message('Total amount of data (bytes) received by \'%s\' from '
+                      'clients so far: %s'
+                      % (elb_name, data_accumulator.client_sent))
+        print_message('Total amount of data (bytes) sent by \'%s\' to '
+                      'clients so far: %s'
+                      % (elb_name, data_accumulator.client_receive))
 
         # debug
-        print_message('Total amount of data (bytes) received by \'%s\' so far '
-                      ': %s' % (elb_name, total_receive))
-        print_message('Total amount of data (bytes) sent by \'%s\' so far '
-                      ': %s' % (elb_name, total_sent))
+        # print_message('Total amount of data (bytes) received by \'%s\' so far '
+        #               ': %s' % (elb_name, total_receive))
+        # print_message('Total amount of data (bytes) sent by \'%s\' so far '
+        #               ': %s' % (elb_name, total_sent))
 
         # wait for 2 minute before another poll
         # time.sleep(120)
@@ -232,7 +291,8 @@ def process_access_log(bucket, elb_region, elb_name):
         print_message('Access log of \'%s\' obtained so far : %s\n'
                       % (elb_name, logs_obtained))
 
-    return '%s,%s' % (total_receive, total_sent)
+    return data_accumulator.client_sent, data_accumulator.client_receive
+    # return '%s,%s' % (total_receive, total_sent)
 
 
 def counting_elb_data(bucket, elb, queue):
@@ -249,12 +309,12 @@ def counting_elb_data(bucket, elb, queue):
     elb_name, elb_region = elb.split(':')
     results = process_access_log(bucket, elb_region, elb_name)
 
-    total_receive, total_sent = results.split(',')
+    clients_sent, client_received = results
 
-    # convert bucket name and total amount of data in to string
+    # convert bucket name and total amount of data to string
     # so that the element in queue can have bucket name info
-    data_str = '%s=%s,%s' % (elb_name, total_receive, total_sent)
-    queue.put(data_str)
+    data_tuple = (elb_name, (clients_sent, client_received))
+    queue.put(data_tuple)
 
 
 def process_elb_access_log(elb_buckets_dict, elb_data_manager, queue):
@@ -281,17 +341,21 @@ def process_elb_access_log(elb_buckets_dict, elb_data_manager, queue):
     # by which time it will be the end of measurement interval
     result_queue = elb_data_manager.collect_results()
     # collect the total data processed by each ELB
-    # '%s=%s,%s' % (station name, total_receive, total_sent)
     data_in = dict()
     data_out = dict()
+
     while not result_queue.empty():
-        station, data_str = result_queue.get().split('=')
-        data_received, data_sent = data_str.split(',')
-        data_in.update({station: int(data_received)})
-        data_out.update({station: int(data_sent)})
+        data_tuple = result_queue.get()
+        station = data_tuple[0]
+        # the amount of data sent and received by each client
+        # *of ONE station
+        client_sent, client_received = data_tuple[1]
+
+        data_in.update({station: client_sent})
+        data_out.update({station: client_received})
 
     # debug
-    print_message('Data in (bytes): %s' % data_in)
-    print_message('Data out (bytes): %s' % data_out)
+    print_message('Data in (bytes) from clients: %s' % data_in)
+    print_message('Data out (bytes) from clients: %s' % data_out)
 
     queue.put((data_in, data_out))

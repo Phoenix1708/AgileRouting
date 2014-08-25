@@ -5,6 +5,20 @@ import math
 from utilities.utils import print_message
 
 
+def f_range(start, stop, step):
+    """
+    Generate sequence of value with float step
+    :param start:
+    :param stop:
+    :param step:
+    :return:
+    """
+    r = float(start)
+    while r < float(stop):
+        yield r
+        r += float(step)
+
+
 def calculate_cost_coef(total_requests, avg_data_in, avg_data_out, elb_price,
                         prices_ranges, cost_mode):
     cost_coef = 0
@@ -62,12 +76,12 @@ def calculate_cost_coef(total_requests, avg_data_in, avg_data_out, elb_price,
 # # |   0  #data  0    0   ... | < 10240 GB
 # # ......
 #
-#     # | #data  0    0    0   ... | > 10240 GB
-#     # | #data  0    0    0   ... | < 51200 GB
-#     # ......
+# # | #data  0    0    0   ... | > 10240 GB
+# # | #data  0    0    0   ... | < 51200 GB
+# # ......
 #
-#     # | #data  0    0    0   ... | > 52100 GB
-#     # | #data  0    0    0   ... | < 153600 GB
+# # | #data  0    0    0   ... | > 52100 GB
+# # | #data  0    0    0   ... | < 153600 GB
 #     # ......
 #
 #     # | #data  0    0    0   ... | > 153600 GB
@@ -114,7 +128,7 @@ def calculate_cost_coef(total_requests, avg_data_in, avg_data_out, elb_price,
 def optimise(num_of_stations, total_requests, elb_prices,
              avg_data_in_per_reqs, avg_data_out_per_reqs,
              in_bandwidths, out_bandwidths, budget,
-             service_rates, sla_response_t, measurement_interval, k,
+             service_rates, measurement_interval, station_latency, k,
              ec2_prices_ranges=None, cost_mode=None):
     """
     :param num_of_stations: total number of receipts of client requests
@@ -135,6 +149,7 @@ def optimise(num_of_stations, total_requests, elb_prices,
                             station to send response
 
     :param service_rates:   Overall service rate of each service station
+    :param station_latency: latency between this client and each station
     :param sla_response_t:  Service Level Agreement of the response time
                             for each service station
 
@@ -151,15 +166,24 @@ def optimise(num_of_stations, total_requests, elb_prices,
 
     :return:                The current best weight for each requests receipt
 
-
     # Objective: (e.g number of service station = 2)
     # maximise  Cost + K * throughput
     #
-    # total_requests *
-    # (avg_data_in_per_req[0] + avg_data_out_per_req[0]) *
-    # elb_price[0] *
-    # P[0]
-    # +
+    ///////////////////
+     Update: New objective function:
+             Minimise Cost + latency perceived by user
+             latency perceived by user
+
+     Only the objective function and response time constrain needs to change
+    ////////////////////
+    #
+    #         ************ Deprecated *************
+    #
+    #         total_requests *
+    #         (avg_data_in_per_req[0] + avg_data_out_per_req[0]) *
+    #         elb_price[0] *
+    #         P[0]
+    #         +
     #         total_requests * avg_data_out_per_req[0] * P[0] * ec2_price_range
     #         +
     #         K * total_requests *
@@ -196,7 +220,8 @@ def optimise(num_of_stations, total_requests, elb_prices,
     #         K * total_requests
     #         +
     #         total_requests * avg_data_out_per_req[1] * ec2_price_range) * P[1]
-
+    #
+    #         ************ End of Deprecated *************
     #
     # Subject to:
 
@@ -236,7 +261,7 @@ def optimise(num_of_stations, total_requests, elb_prices,
 
 
 
-    #   "Response time constrain"
+    #   "(Deprecated)Response time constrain"
 
     #   D_sla[0] * service_rates[0]^-1 * total_requests * P[0]
     #           <= measurement_interval * (D_sla[0] - service_rates[0]^-1)
@@ -302,10 +327,11 @@ def optimise(num_of_stations, total_requests, elb_prices,
         out_bandwidth_coef[i] = \
             total_requests * avg_data_out_per_reqs[i] / measurement_interval
 
-        """ Response time constrain """
-        response_t_coef = [0 for i3 in xrange(num_of_stations)]
-        response_t_coef[i] = \
-            sla_response_t[i] * math.pow(service_rates[i], -1) * total_requests
+        # """ Response time constrain """
+        # response_t_coef = [0 for i3 in xrange(num_of_stations)]
+        # response_t_coef[i] = \
+        #     sla_response_t[i] * math.pow(service_rates[i], -1)
+        #       * total_requests
 
         """ All variable (weights) are positive """
         all_pos_coef = [0 for i4 in xrange(num_of_stations)]
@@ -326,7 +352,6 @@ def optimise(num_of_stations, total_requests, elb_prices,
         # print_message('Total cost : %s $' % (cost_coef + 192.6))
         # #### test ####
 
-        #TODO: plus previous value ?
         cost_coef = \
             total_requests * (avg_data_in_per_reqs[i] +
                               avg_data_out_per_reqs[i]) * elb_prices[i] + \
@@ -341,7 +366,7 @@ def optimise(num_of_stations, total_requests, elb_prices,
         coefficients_for_p_i = []
         coefficients_for_p_i.extend(in_bandwidth_coef)
         coefficients_for_p_i.extend(out_bandwidth_coef)
-        coefficients_for_p_i.extend(response_t_coef)
+        # coefficients_for_p_i.extend(response_t_coef)
         coefficients_for_p_i.extend(all_pos_coef)
         # in order to turn the "sum of weights is 1" equability constrain to
         # inequality constrain, replace the original equality constrain with
@@ -376,11 +401,13 @@ def optimise(num_of_stations, total_requests, elb_prices,
         coefficients.append(coefficients_for_p_i)
 
         # Building objective function coefficient for this variable
+        service_time = math.pow(service_rates[i], -1)
         obj_p_i_coef = \
             total_requests * (avg_data_in_per_reqs[i] +
                               avg_data_out_per_reqs[i]) * elb_prices[i] + \
-            k * total_requests + \
-            0.120 * total_requests * avg_data_out_per_reqs[i]
+            0.120 * total_requests * avg_data_out_per_reqs[i] + \
+            (measurement_interval - service_time * total_requests) / \
+            (service_time * measurement_interval)
 
         # maximise = minimise the negative form
         obj_func_coef.append(obj_p_i_coef * -1)
@@ -391,11 +418,11 @@ def optimise(num_of_stations, total_requests, elb_prices,
     # e.g in_bandwidths -> out_bandwidths -> Response time constrains -> ...
     right_hand_side.extend([in_bandwidths[n] for n in xrange(num_of_stations)])
     right_hand_side.extend([out_bandwidths[m] for m in xrange(num_of_stations)])
-    right_hand_side.extend(
-        [measurement_interval *
-         (sla_response_t[k] - math.pow(service_rates[k], -1))
-         for k in xrange(num_of_stations)]
-    )
+    # right_hand_side.extend(
+    #     [measurement_interval *
+    #      (sla_response_t[k] - math.pow(service_rates[k], -1))
+    #      for k in xrange(num_of_stations)]
+    # )
     right_hand_side.extend([0 for j in xrange(num_of_stations)])
     right_hand_side.append(0.0000000001 - 1)
     right_hand_side.append(1 + 0.0000000001)
@@ -416,63 +443,209 @@ def optimise(num_of_stations, total_requests, elb_prices,
     return sol['x']
 
 
+def objective_function(variables, total_requests, data_in_per_reqs,
+                       data_out_per_reqs, elb_prices,
+                       m_interval, service_rates, station_latency):
+    result = 0
+    for i in xrange(len(variables)):
+        elb_cost = \
+            total_requests * (data_in_per_reqs[i] + data_out_per_reqs[i]) * \
+            elb_prices[i] * variables[i]
+
+        ec2_cost = 0.120 * total_requests * data_out_per_reqs[i] * variables[i]
+
+        service_time = math.pow(service_rates[i], -1)
+        latency = (service_time * m_interval) / \
+                  (m_interval - service_time * total_requests *
+                   variables[i]) + station_latency[i]
+
+        result += elb_cost + ec2_cost + latency
+
+    return result
+
+
+def constrains_check(variables, total_requests,
+                     data_in_per_reqs, data_out_per_reqs,
+                     elb_prices, m_interval, budget,
+                     in_bandwidths, out_bandwidths):
+    passes = 0  # passed constrains
+
+    cost = 0
+    for i in xrange(len(variables)):
+        """ In bandwidth constrains """
+
+        in_bandwidth = \
+            total_requests * data_in_per_reqs[i] * variables[i] / m_interval
+
+        if in_bandwidth < in_bandwidths[i]:
+            passes += 1
+
+        """ Out bandwidth constrains """
+        out_bandwidth = \
+            total_requests * data_out_per_reqs[i] * variables[i] / m_interval
+
+        if out_bandwidth < out_bandwidths[i]:
+            passes += 1
+
+        """ Cost less then or equal to budget """
+        # EC2_cost = 0.9312 * total_data_out * P + 196.6
+        # (for data less than 40TB)
+        # cost_coef = \
+        #     total_requests * (avg_data_in_per_reqs[i] +
+        #                       avg_data_out_per_reqs[i]) * elb_prices[i] + \
+        #     0.9312 * total_requests * avg_data_out_per_reqs[i]
+        #
+        # #### test ####
+        # print_message('Total cost : %s $' % (cost_coef + 192.6))
+        # #### test ####
+
+        elb_cost = \
+            total_requests * (data_in_per_reqs[i] + data_out_per_reqs[i]) * \
+            elb_prices[i] * variables[i]
+
+        ec2_cost = 0.120 * total_requests * variables[i] * data_out_per_reqs[i]
+
+        cost += elb_cost + ec2_cost
+
+    if cost < budget:
+        passes += 1
+
+    if passes == len(variables) * 2 + 1:
+        return True
+
+    return False
+
+
+def optimisation(num_of_stations, total_requests, elb_prices,
+                 avg_data_in_per_reqs, avg_data_out_per_reqs,
+                 in_bandwidths, out_bandwidths, budget,
+                 service_rates, measurement_interval, station_latency):
+
+    variables = [1 for i in len(num_of_stations)]
+
+    feasible_tuple = []
+
+    # get all combination that satisfy constrains
+    for i in f_range(1, 99, 0.01):
+        variables[0] = float(i) / 100.0
+        variables[1] = 1 - float(i) / 100.0
+
+        satisfy_constrains = constrains_check(variables, total_requests,
+                                              avg_data_in_per_reqs,
+                                              avg_data_out_per_reqs,
+                                              elb_prices, measurement_interval,
+                                              budget,
+                                              in_bandwidths, out_bandwidths)
+        if satisfy_constrains:
+            feasible_tuple.append((variables[0], variables[1]))
+
+    smallest = float("inf")
+    answer = (1, 1)
+    # minimisation - find the feasible tuple gives the minimal value
+    for f_tuple_idx, f_tuple_val in enumerate(feasible_tuple):
+        objective_result = objective_function(f_tuple_val, total_requests,
+                                              avg_data_in_per_reqs,
+                                              avg_data_out_per_reqs, elb_prices,
+                                              measurement_interval,
+                                              service_rates,
+                                              station_latency)
+        if objective_result < smallest:
+            smallest = objective_result
+            answer = f_tuple_val
+
+    #### test ####
+    total_cost = 0
+    for i in xrange(len(answer)):
+        elb_cost = \
+            total_requests * (avg_data_in_per_reqs[i] +
+                              avg_data_out_per_reqs[i]) * \
+            elb_prices[i] * answer[i]
+
+        ec2_cost = 0.120 * total_requests * avg_data_out_per_reqs[i] * answer[i]
+
+        service_time = math.pow(service_rates[i], -1)
+
+        total_cost += elb_cost + ec2_cost
+
+        latency = (service_time * measurement_interval) / \
+                  (measurement_interval - service_time * total_requests *
+                   answer[i]) + station_latency[i]
+
+        print_message('Expected latency : %s $' % latency)
+
+    print_message('Total cost : %s $' % total_cost)
+    # #### test ####
+
+    return answer
+
+
 # if __name__ == '__main__':
-#     A = matrix([[-1.0, -1.0, 0.0, 1.0], [1.0, -1.0, -1.0, -2.0]])
-#     b = matrix([1.0, -2.0, 0.0, 4.0])
-#     c = matrix([2.0, 1.0])
-#     sol = solvers.lp(c, A, b)
-#
-#     print(sol['x'])
-#     test = [sol['x'][i] for i in xrange(2)]
-#     print test
-#     print sol['x'][0]
-#     print sol['x'][1]
-#     print sol['x'][2]
+#     for i in f_range(1, 99, 0.1):
+#         print i
+#         print float(i) / 100.0
+#         print 1 - float(i) / 100.0
 
-    # coefficients = [[
-    #      0,
-    #      1.5316553365099901e-07,
-    #      0,
-    #      0.001320873620062156,
-    #      0,
-    #      871.7494370007444,
-    #      0,
-    #      -1,
-    #      -1,
-    #      1,
-    #      0.0757350879782905],
-    #
-    #      [0, 1.5316553365099901e-07, 0, 0.001320873620062156, 0,
-    #       871.7494370007444, 0, -1, -1, 1, 0.0757350879782905]]
-    #
-    # right_hand_side = [
-    #     0.04541015625,
-    #     0.04748535156,
-    #     0.04541015625,
-    #     0.04748535156,
-    #     550.6225874560688,
-    #     560.8050746057617,
-    #     0,
-    #     0,
-    #     -0.9999999999,
-    #     1.0000000001,
-    #     1000000]
-    #
-    # obj_func_coef = [23429.924264912024, 23429.924264912024]
-    #
-    # a = matrix(coefficients)
-    # b = matrix(right_hand_side)
-    # c = matrix(obj_func_coef)
-    #
-    # sol = solvers.lp(c, a, b)
-    #
-    # print sol['x']
+    # for i in xrange(1, 100):
+    #     print float(i) / 100
+    #     print 1 - float(i) / 100
+    #     print float("inf")
 
-    # test = optimise(2, 1000, [0.008, 0.010], [29, 50], [100, 200], [50, 100],
-    #                 [0.5, 0.6], 4 / 5)
-    #
-    # test2 = optimise(2, 1000, [0.008, 0.008], [29, 29], [100, 100],
-    #                  [5000, 5000], [0.5, 0.5], 4 / 5)
+        #     A = matrix([[-1.0, -1.0, 0.0, 1.0], [1.0, -1.0, -1.0, -2.0]])
+        #     b = matrix([1.0, -2.0, 0.0, 4.0])
+        #     c = matrix([2.0, 1.0])
+        #     sol = solvers.lp(c, A, b)
+        #
+        #     print(sol['x'])
+        #     test = [sol['x'][i] for i in xrange(2)]
+        #     print test
+        #     print sol['x'][0]
+        #     print sol['x'][1]
+        #     print sol['x'][2]
 
-    # print test
-    # print test2
+        # coefficients = [[
+        #      0,
+        #      1.5316553365099901e-07,
+        #      0,
+        #      0.001320873620062156,
+        #      0,
+        #      871.7494370007444,
+        #      0,
+        #      -1,
+        #      -1,
+        #      1,
+        #      0.0757350879782905],
+        #
+        #      [0, 1.5316553365099901e-07, 0, 0.001320873620062156, 0,
+        #       871.7494370007444, 0, -1, -1, 1, 0.0757350879782905]]
+        #
+        # right_hand_side = [
+        #     0.04541015625,
+        #     0.04748535156,
+        #     0.04541015625,
+        #     0.04748535156,
+        #     550.6225874560688,
+        #     560.8050746057617,
+        #     0,
+        #     0,
+        #     -0.9999999999,
+        #     1.0000000001,
+        #     1000000]
+        #
+        # obj_func_coef = [23429.924264912024, 23429.924264912024]
+        #
+        # a = matrix(coefficients)
+        # b = matrix(right_hand_side)
+        # c = matrix(obj_func_coef)
+        #
+        # sol = solvers.lp(c, a, b)
+        #
+        # print sol['x']
+
+        # test = optimise(2, 1000, [0.008, 0.010], [29, 50], [100, 200], [50, 100],
+        #                 [0.5, 0.6], 4 / 5)
+        #
+        # test2 = optimise(2, 1000, [0.008, 0.008], [29, 29], [100, 100],
+        #                  [5000, 5000], [0.5, 0.5], 4 / 5)
+
+        # print test
+        # print test2

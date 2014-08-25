@@ -459,7 +459,8 @@ class AWSConnection(object):
         log.debug(body)
 
         if response.status >= 300:
-            raise UnsuccessfulRequestError(response.status, response.reason, body)
+            raise UnsuccessfulRequestError(response.status,
+                                           response.reason, body)
 
         # de-serialise the xml response with corresponding xml class
         xml_class = get_xml_class(response_class)
