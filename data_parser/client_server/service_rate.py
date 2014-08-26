@@ -189,8 +189,6 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
             i += 1
             t_old = t
 
-        # print acum
-
         mean_service_time[:, e] = \
             [a2 / a1 for a2, a1 in zip(acum[:, 1], acum[:, 0])]
 

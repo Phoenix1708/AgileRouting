@@ -530,7 +530,7 @@ def optimisation(num_of_stations, total_requests, elb_prices,
     feasible_tuple = []
 
     # get all combination that satisfy constrains
-    for i in f_range(1, 99, 0.01):
+    for i in f_range(1, 99, 0.001):
         variables[0] = float(i) / 100.0
         variables[1] = 1 - float(i) / 100.0
 

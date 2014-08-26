@@ -273,31 +273,32 @@ def calculate_metrics(data_list):
     # "vm, number of requests, cpu_core, data" dict list
     service_rate_para_list = []
     # list that stores the average arrival rate of each server
-    avg_arrival_rate = []
+    avg_server_arrival_rate = []
 
     # collecting relative parameters
     for vm_data in data_list:
         vm_name = vm_data[0]
         data = vm_data[1]
 
-        arrival_rates_list = []  # list that stores the average arrival
+        arrivals_list = []  # list that stores the average arrival
         # rate of "each sampling interval" for
         # a single server
 
         # sum the arrival rate for each request at the same sampling interval
         for i in xrange(len(data[0][0])):
-            one_sampling_interval = 0
+            sampling_interval_arrivals = 0
             for j in xrange(len(data[2]) - 1):
-                one_sampling_interval += data[7][j][i]
+                sampling_interval_arrivals += data[7][j][i]
 
             # store overall arrival rate of each sampling interval
             # in order to estimate service rate with CPU utilisation
             # which is also collected during each sampling interval
-            arrival_rates_list.append(one_sampling_interval)
+            arrivals_list.append(sampling_interval_arrivals)
 
-        # collect average arrival rate of each sever
-        # for overall arrival rate calculation
-        avg_arrival_rate.append(numpy.mean(arrival_rates_list))
+        # Mean of arrivals of all sampling intervals is the arrival rate
+        # the unit time of which is the sampling interval (in this case it is
+        #  1 minutes
+        avg_server_arrival_rate.append(numpy.mean(arrivals_list))
 
         # calculate service rate
         num_of_requests = calculate_total_requests(data)
@@ -322,9 +323,9 @@ def calculate_metrics(data_list):
     # calculate total number of requests
     total_requests = sum([p['num_of_requests'] for p in service_rate_para_list])
 
-    arrival_rate = sum(avg_arrival_rate)
+    station_arrival_rate = sum(avg_server_arrival_rate)
 
-    return total_requests, arrival_rate, service_rate_para_list
+    return total_requests, station_arrival_rate, service_rate_para_list
     # , overall_service_rate
 
 

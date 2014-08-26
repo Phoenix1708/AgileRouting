@@ -263,7 +263,7 @@ def print_message(msg):
 
 def log_info(log_file_name, data_to_write):
     with open(log_file_name, 'a+') as f:
-        f.write(data_to_write + '\n')
+        f.write('%s\n' % data_to_write)
 
 
 def get_expected_num_logs():

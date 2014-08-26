@@ -17,6 +17,9 @@ from utilities.utils import get_station_region, get_available_stations, \
 
 base_domain = 'agilerouting.net'
 
+# name of the file that record metrics
+metric_record_file = 'metrics.txt'
+
 
 def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
                          elb_prices, latency_results_dict, measurement_interval,
@@ -91,9 +94,9 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
     alias_zone_id = {'xueshi-station-1': 'Z32O12XQLNTSW2',
                      'xueshi-station-2': 'Z35SXDOTRQ7X7K'}
     # alias_zone_id = {'xueshi-station-1': 'Z3NF1Z3NOM5OY2',
-    #                  'xueshi-station-2': 'Z3DZXE0Q79N41H'}
+    # 'xueshi-station-2': 'Z3DZXE0Q79N41H'}
     clients_regions = {'ap_south_1_client_1': 'ireland',
-                       'us_east_1_client_1': 'nvirgina'}
+                       'us_east_1_client_1': 'nvirginia'}
 
     identifiers = dict(cfg.items('StationWRRAliasIdentifiers'))
 
@@ -119,7 +122,8 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
                            record_type="A", weight=weights_val,
                            identifier=identifier)
 
-        print '[Debug]: weight before sending change request %s' % weights_val
+        print_message('[Debug]: weight before sending change request %s'
+                      % weights_val)
 
         new = rrs.add_change(action="UPSERT", **base_record)
         new.set_alias(host_zone_id, unicode(alias_dns_name), False)
@@ -136,11 +140,13 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
                             'was still processing a prior request'
             if retriable_err in e.body:
                 # pause for a while before send another request
-                time.sleep(3)
+                time.sleep(2.5)
                 print_message('Previous request to Route 53 in progress.\n '
                               'Re-sending request...')
 
     print_message('Weights set for client %s: %s' % (client, weights))
+    log_info(metric_record_file,
+             'Weights set for client %s: %s' % (client, weights))
 
     queue.put((client, weights))
 
@@ -158,9 +164,6 @@ def main():
     for station, region in elb_regions.iteritems():
         elb_region_str = '%s:%s' % (station, region)
         elb_buckets_dict.update({elb_region_str: unicode(elb_buckets[station])})
-
-    # collecting access log for each elb with different threads
-    elb_data_manager = ThreadingManager()
 
     stations = get_available_stations()
     for station in stations:
@@ -210,7 +213,7 @@ def main():
         data_counting_task.start_task(
             target_func=process_elb_access_log,
             name="elb_access_log_processor",
-            para=[elb_buckets_dict, elb_data_manager]
+            para=[elb_buckets_dict]
         )
 
         latency_results_dict = latency_manager.collect_results().get()
@@ -252,9 +255,6 @@ def main():
         arrival_rates = dict()
         service_rates = dict()
 
-        # name of the file that record metrics
-        metric_record_file = 'metrics.txt'
-
         for station_metric in station_metric_list:
             # getting metric
             station_name = station_metric.station_name
@@ -277,12 +277,12 @@ def main():
             response_time = \
                 math.pow(service_rate, -1) / (1 - math.pow(service_rate, -1) *
                                               arrival_rate)
-            print '[Debug] predicted response time of service station ' \
+            print '[Debug] predicted current response time of service station '\
                   '\'%s\': %s' % (station_name, response_time)
 
             log_info(metric_record_file,
-                     '[Debug] predicted response time of service station '
-                     '\'%s\': %s' % (station_name, response_time))
+                     '[Debug] predicted currentresponse time of service '
+                     'station \'%s\': %s' % (station_name, response_time))
 
         # TODO: needs to be calculated per client
         # TODO: if c-sparql could record the source of each requests
@@ -375,8 +375,6 @@ def main():
         # sla_response_t = [1.5, 1.5]
 
         # optimise for each client...
-
-        available_clients = get_available_clients()
         # do optimisation for each client in a new threads
         optimiser = ThreadingManager()
         for client in available_clients:
@@ -393,10 +391,13 @@ def main():
         # synchronising threads
         optimiser.collect_results()
 
+        # it takes up to 60 mins for Route 53 record changes to take effect
+        time.sleep(60)
+
         # clients_optimisation(avg_data_in_per_reqs,
         # avg_data_out_per_reqs, client,
         # elb_prices, latency_results_dict,
-        #                      measurement_interval, service_rates,
+        # measurement_interval, service_rates,
         #                      stations, total_request_per_client)
 
 
@@ -416,7 +417,7 @@ if __name__ == "__main__":
     # #                  'xueshi-station-2': 'Z3DZXE0Q79N41H'}
     #
     # station_region = {'ap_south_1_client_1': 'ireland',
-    # 'us_east_1_client_1': 'nvirgina'}
+    # 'us_east_1_client_1': 'nvirginia'}
     #
     # identifiers = dict(cfg.items('StationWRRAliasIdentifiers'))
     #
@@ -425,7 +426,7 @@ if __name__ == "__main__":
     # # stations the output weights should be in the same order
     # station_weights = {}
     # for idx in xrange(len(stations)):
-    #     station_weights.update({stations[idx]: weights[idx]})
+    # station_weights.update({stations[idx]: weights[idx]})
     #
     # rrs = ResourceRecordSets(route53_conn, zone.id)
     #

@@ -332,15 +332,17 @@ def counting_elb_data(bucket, elb, queue):
     queue.put(data_tuple)
 
 
-def process_elb_access_log(elb_buckets_dict, elb_data_manager, queue):
+def process_elb_access_log(elb_buckets_dict, queue):
     """
     Primarily handle S3 log processing threads
 
     :param elb_buckets_dict:
-    :param elb_data_manager:
     :param queue:
     :return:
     """
+
+    # collecting access log for each elb with different threads
+    elb_data_manager = ThreadingManager()
 
     for elb_region_str, bucket_name in elb_buckets_dict.iteritems():
         c = S3Connection()
