@@ -19,7 +19,8 @@ base_domain = 'agilerouting.net'
 
 def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
                          elb_prices, latency_results_dict, measurement_interval,
-                         service_rates, stations, total_request_per_client):
+                         service_rates, stations, total_request_per_client,
+                         queue):
     # bandwidths for each client
     in_bandwidths = []
     out_bandwidths = []
@@ -44,8 +45,8 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
             station_latency_dict.update({dst_host: latency_val})
     for station in stations:
         # convert from Mb/s to GB/s
-        in_band = in_band_dict[station] / 8 / 1024
-        out_band = out_band_dict[station] / 8 / 1024
+        in_band = float(in_band_dict[station]) / 8 / 1024
+        out_band = float(out_band_dict[station]) / 8 / 1024
         in_bandwidths.append(in_band)
         out_bandwidths.append(out_band)
 
@@ -112,6 +113,8 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
 
     print_message('Weights set for client %s: %s' % (client, weights))
 
+    queue.put((client, weights))
+
 
 def main():
     setup_logging()
@@ -156,20 +159,20 @@ def main():
         # since there is delay
         measurement_interval = calculate_waiting_time()
 
-        server_log_processor = ThreadingManager()
-        server_log_processor.start_task(
-            target_func=process_server_logs,
-            name="server_log_processor",
-            para=[log_base_dir, line_counters, total_num_users,
-                  measurement_interval]
-        )
-
         # Measuring latency between each client region and service station
         latency_manager = ThreadingManager()
         latency_manager.start_task(
             target_func=measure_latency,
             name="latency_manager",
             para=[available_clients, stations, measurement_interval]
+        )
+
+        server_log_processor = ThreadingManager()
+        server_log_processor.start_task(
+            target_func=process_server_logs,
+            name="server_log_processor",
+            para=[log_base_dir, line_counters, total_num_users,
+                  measurement_interval]
         )
 
         # Begin gathering info of the amount of data
@@ -181,7 +184,7 @@ def main():
             para=[elb_buckets_dict, elb_data_manager]
         )
 
-        latency_results_dict = latency_manager.collect_results()
+        latency_results_dict = latency_manager.collect_results().get()
 
         # collecting csparql log first since its processing will complete first
         # while elb data might has delay
@@ -210,6 +213,11 @@ def main():
         avg_data_in_per_reqs = dict()
         # <Client_name: <Station: data_out_per_req>>
         avg_data_out_per_reqs = dict()
+
+        # initialise
+        for cli_name in available_clients:
+            avg_data_in_per_reqs.update({cli_name: {}})
+            avg_data_out_per_reqs.update({cli_name: {}})
 
         # requests arrival rate and service rate of each service station
         arrival_rates = dict()
@@ -282,8 +290,8 @@ def main():
                 # convert the amount of data to GB
                 sent_data = float(sent_data / math.pow(1024, 3))
                 avg_data_in_per_req = sent_data / t_request
-                avg_data_in_per_reqs.update(
-                    {c: {station_name: avg_data_in_per_req}})
+                avg_data_in_per_reqs[c].update(
+                    {station_name: avg_data_in_per_req})
 
         for station_name in stations:
             d_out = data_out.get(station_name)
@@ -292,8 +300,8 @@ def main():
                 t_request = total_request_per_client[c1]
                 received_data = float(received_data / math.pow(1024, 3))
                 avg_data_out_per_req = received_data / t_request
-                avg_data_out_per_reqs.update(
-                    {c1: {station_name: avg_data_out_per_req}})
+                avg_data_out_per_reqs[c1].update(
+                    {station_name: avg_data_out_per_req})
 
                 # # convert the amount of data to GB
                 # d_in = float(d_in / math.pow(1024, 3))

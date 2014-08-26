@@ -72,6 +72,11 @@ class DataAccumulatorManager(ThreadingManager):
 
                 # ip -> name -> record data for each name
                 client_ip = split_str[2].split(":")[0]
+                # occasionally we got ip not from any clients
+                # Suspicious...
+                if client_ip not in self.client_ips_name_pair.keys():
+                    continue
+
                 c_name = self.client_ips_name_pair[client_ip]
 
                 received_byte = int(split_str[9])
@@ -83,13 +88,13 @@ class DataAccumulatorManager(ThreadingManager):
                 total_receive += received_byte
                 total_sent += sent_byte
 
-        queue.put('%s,%s' % (client_in_dict, client_out_dict))
+        queue.put((client_in_dict, client_out_dict))
         # queue.put('%s,%s' % (total_receive, total_sent))
 
     def collect_results(self):
         queue = super(DataAccumulatorManager, self).collect_results()
         while not queue.empty():
-            c_sent, c_receive = queue.get().split(',')
+            c_sent, c_receive = queue.get()
 
             for c_name, data_sent in c_sent.iteritems():
                 self.client_sent[c_name] += data_sent
@@ -103,7 +108,7 @@ class DataAccumulatorManager(ThreadingManager):
         # return '%s,%s' % (self.total_receive, self.total_sent)
 
 
-def calculate_key_prefix(elb_region, elb_name):
+def calculate_key_prefix(elb_region, elb_name, last_expected_minutes):
     """Function that calculate the prefix for bucket key searching
 
     :param elb_region:
@@ -112,8 +117,10 @@ def calculate_key_prefix(elb_region, elb_name):
     """
     print_message('Retrieving access log for %s ...' % elb_name)
 
-    day, hour, month, next_expected_logging_minute, year \
-        = get_next_nth_elb_log_time(1)
+    day, hour, month, next_expected_logging_minute, year, max_waiting_minutes\
+        = get_next_nth_elb_log_time(1, last_expected_minutes)
+
+    last_expected_minutes = next_expected_logging_minute
 
     # convert month, day, hour and minute to 2 digit representation
     month = '%02d' % month
@@ -143,7 +150,7 @@ def calculate_key_prefix(elb_region, elb_name):
 
     request_headers = {'prefix': unicode(key_prefix), 'delimiter': '.log'}
 
-    return request_headers
+    return request_headers, max_waiting_minutes, last_expected_minutes
 
 
 def process_access_log(bucket, elb_region, elb_name):
@@ -201,11 +208,15 @@ def process_access_log(bucket, elb_region, elb_name):
     logs_obtained = 0
     expected_logs_to_obtain = get_expected_num_logs()
 
+    # maintain the last log omitting minutes that dealt with
+    last_expected_minutes = None
+
     # check whether the it has reached the end of measurement interval
     # while (time.time() - start_time) / 60 <= m_interval:
     while logs_obtained < expected_logs_to_obtain:
 
-        request_headers = calculate_key_prefix(elb_region, elb_name)
+        request_headers, max_waiting_minutes, last_expected_minutes \
+            = calculate_key_prefix(elb_region, elb_name, last_expected_minutes)
 
         matching_keys = []
         # In case of total waiting time exceed the S3
@@ -233,10 +244,14 @@ def process_access_log(bucket, elb_region, elb_name):
             # There could be up to 5 mins delay for actual log delivery
             # http://docs.aws.amazon.com/ElasticLoadBalancing/latest/
             # DeveloperGuide/access-log-collection.html
-            if time_counter / 60 > 10:
+            # The next expected minus should be re calculated base on its
+            # last value i.e the last "next expected minus"
+            if time_counter / 60 > max_waiting_minutes:
                 print_message('')
                 print_message('Re-calculating expected log file...')
-                request_headers = calculate_key_prefix(elb_region, elb_name)
+                request_headers, max_waiting_minutes, last_expected_minutes \
+                    = calculate_key_prefix(elb_region, elb_name,
+                                           last_expected_minutes)
                 time_counter = 0
                 continue
 
@@ -265,7 +280,7 @@ def process_access_log(bucket, elb_region, elb_name):
                                          (key, log_file_path))
 
         # Collect results from each threads
-        data_accumulator.collect_results().split(',')
+        data_accumulator.collect_results()
 
         # sent, receive = data_accumulator_manager.collect_results().split(',')
         #

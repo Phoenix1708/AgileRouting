@@ -22,15 +22,13 @@ def measure_round_trip_delay(from_host, to_host, from_host_pk,
     while time_elapsed < measurement_interval:   # in the unit of seconds
 
         cmd = ' '.join(["ping", "-c 5", to_host])
-        out, err = execute_remote_command(from_host, 'ubuntu', '', cmd,
+        out, err = execute_remote_command(from_host, cmd, 'ubuntu', '',
                                           from_host_pk)
-
-        print out
 
         rt_str = [text for text in out.split('\n')
                   if 'min/avg/max/' in text]
 
-        print rt_str
+        # print rt_str
 
         stat_str = rt_str[0].split('=')
         metric_name = stat_str[0]
@@ -109,7 +107,7 @@ def _measure_latency(src_hosts, dst_hosts, measurement_interval):
     return station_delay_dict
 
 
-def measure_latency(available_clients, available_stations, m_interval):
+def measure_latency(available_clients, available_stations, m_interval, queue):
 
     src_host = dict()
     to_host = dict()
@@ -125,22 +123,23 @@ def measure_latency(available_clients, available_stations, m_interval):
 
     for station_name in available_stations:
         ip_key_str = '%s_server_1' % station_name
-        to_host.update({station_metadata_map[ip_key_str]: station_name})
+        to_host.update({station_metadata_map['ip'][ip_key_str]: station_name})
 
     result_dict = _measure_latency(src_host, to_host, m_interval)
+    queue.put(result_dict)
 
-    return result_dict
+    # return result_dict
 
 
-# if __name__ == '__main__':
-#
-#     ip_host_name = ('54.255.65.145', 'AP_SOUTH_1_CLIENT_1')
-#     module_path = os.path.dirname(Resources.__file__)
-#     private_key_file_path = module_path + '/xueshisingapore.pem'
-#
-#     src_host = {ip_host_name: private_key_file_path}
-#     to_host = {'176.34.66.152': 'xueshi-station-1'}
-#     m_interval = 60
-#
-#     result_dict = measure_latency(src_host, to_host, m_interval)
-#     print result_dict
+if __name__ == '__main__':
+
+    ip_host_name = ('54.255.65.145', 'ap_south_1_client_1')
+    module_path = os.path.dirname(Resources.__file__)
+    private_key_file_path = module_path + '/xueshisingapore.pem'
+
+    src_host = {ip_host_name: private_key_file_path}
+    to_host = {'176.34.66.152': 'xueshi-station-1'}
+    m_interval = 60
+
+    result_dict = _measure_latency(src_host, to_host, m_interval)
+    print result_dict

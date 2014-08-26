@@ -1,6 +1,7 @@
 from __future__ import division
 import base64
 import hashlib
+import logging
 import os
 import re
 import threading
@@ -62,9 +63,9 @@ def get_env(env_var_name):
 
 # def get_ip(host_name):
 # ip = cfg.get('IPs', host_name, None)
-#     if not ip:
-#         raise GeneralError(msg="No IP configuration
-#                               found for host name \'%s\'."
+# if not ip:
+# raise GeneralError(msg="No IP configuration
+# found for host name \'%s\'."
 #                                % host_name)
 #     return ip
 #
@@ -93,7 +94,7 @@ def get_available_stations():
 
 def get_available_clients():
     # TODO: needs to be dynamic in the future
-    return ['AP_SOUTH_1_CLIENT_1', 'US_EAST_1_CLIENT_1']
+    return ['ap_south_1_client_1', 'us_east_1_client_1']
 
 
 def get_stations_bandwidth(client):
@@ -116,14 +117,14 @@ def get_stations_bandwidth(client):
     for client_station_pair, in_band_val in station_in_band_map.iteritems():
         if client in client_station_pair:
             for avail_station in available_stations:
-                if avail_station in k:
+                if avail_station in client_station_pair:
                     available_station_in_band_map.update(
                         {avail_station: in_band_val})
 
     for client_station_pair, out_band_val in station_out_band_map.iteritems():
         if client in client_station_pair:
             for avail_station in available_stations:
-                if avail_station in k:
+                if avail_station in client_station_pair:
                     available_station_out_band_map.update(
                         {avail_station: out_band_val})
 
@@ -271,57 +272,87 @@ def get_expected_num_logs():
     (For code re-usability)
     """
     measurement_interval = cfg.get_int('Default', 'measurement_interval', 10)
-    logging_time = cfg.get_int('s3', 'log_omitting_time', 60)
+    print_message('Measurement interval: %s' % measurement_interval)
+    logging_time = cfg.get_int('s3', 'log_omitting_time', 5)
     expected_logs_to_obtain = math.floor(measurement_interval / logging_time)
 
     return expected_logs_to_obtain
 
 
-def get_next_nth_elb_log_time(n):
+def get_next_nth_elb_log_time(n, last_expected_minutes):
     """
     Get the next minutes e.g 5 or 10 or 15 that the S3 will omit ELB access
     log. It can also get the time of next nth log base on current time
 
     :return:
     """
+
     current_time = datetime.utcnow()
     [year, month, day, hour, minute] = \
         current_time.year, current_time.month, current_time.day, \
         current_time.hour, current_time.minute
 
     # Test
-    print_message('Current Time: %s' % '-'.join([str(year), str(month),
-                                                 str(day), str(hour),
-                                                 str(minute)]))
+    print_message('Current UTC Time: %s' % '-'.join([str(year),
+                                                     str('%02d' % month),
+                                                     str('%02d' % day),
+                                                     str('%02d' % hour),
+                                                     str('%02d' % minute)]))
+
     # Calculate the next expected log file omitted by S3.
     # With 5 minute logging interval, logs are omitted every 5 minutes
     # at each hour, hence the ceiling of the division of current minute
     # with 5 (minutes) should be the next expected minute at which a new
     # log will be omitted
+
     logging_interval = cfg.get_int('s3', 'log_omitting_time', 60)
 
-    next_expected_logging_minute = \
-        int(logging_interval * math.ceil(minute / 5)) + 5 * (n - 1)
+    next_expected_logging_minute = 0
+    if not last_expected_minutes:
+        interval_covered = math.ceil(minute / logging_interval)
+        reminder = minute % logging_interval
+
+        next_expected_logging_minute = \
+            logging_interval * interval_covered + logging_interval * (n - 1)
+
+        # it the current minute is happen to be a logging time
+        # i.e 5, 10, 15 etc.
+        if reminder == 0:
+            next_expected_logging_minute += n * logging_interval
+
+    else:
+        next_expected_logging_minute += \
+            last_expected_minutes + n * logging_interval
 
     if next_expected_logging_minute >= 60:
         hour += 1
-        next_expected_logging_minute -= 60
+        next_expected_logging_minute %= 60
 
-    print_message('Next expected time %s:%s'
+    print_message('Next expected time (UTC) %02d:%02d'
                   % (hour, next_expected_logging_minute))
 
-    return day, hour, month, next_expected_logging_minute, year
+    if next_expected_logging_minute < minute:
+        max_waiting_minutes = \
+            60 - minute + next_expected_logging_minute + logging_interval
+    else:
+        max_waiting_minutes = \
+            next_expected_logging_minute - minute + logging_interval
+
+    print_message('[Debug]: max_waiting_minutes: %s' % max_waiting_minutes)
+
+    return day, hour, month, next_expected_logging_minute, year, \
+           max_waiting_minutes
 
 
 def calculate_waiting_time():
     # record the start time to calculate time elapsed
     start_time = time.time()
     # get expected ELB access logs based on measurement interval
-    expected_logs_to_obtain = get_expected_num_logs()
+    expected_logs = get_expected_num_logs()
 
     # calculate the time for which the last expected access log is
-    day, hour, month, next_expected_logging_minute, year \
-        = get_next_nth_elb_log_time(expected_logs_to_obtain)
+    day, hour, month, next_expected_logging_minute, year, max_waiting_minutes \
+        = get_next_nth_elb_log_time(expected_logs, None)
 
     # from UTC to GMT hour + 1
     time_str = ''.join([str(year), str(month), str(day), str(hour + 1),
@@ -333,8 +364,9 @@ def calculate_waiting_time():
     return waiting_time
 
 
-def execute_remote_command(host_address, username, password,
-                           command, private_key=None):
+def execute_remote_command(host_address, command, username, password='',
+                           private_key=None):
+    # print private_key
     # connect to the host
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -343,8 +375,10 @@ def execute_remote_command(host_address, username, password,
     stdin, stdout, stderr = ssh.exec_command(command)
 
     print_message('')
-    print_message("[Debug] Executing \'%s\' on host: %s"
+    print_message("[Debug] Executing \'%s\' on host: %s\n"
                   % (command, host_address))
+
+    logging.getLogger("paramiko").setLevel(logging.WARNING)
 
     # if output and standard error hasn't been read off before
     # buffer is full the host will hang
@@ -534,7 +568,7 @@ def canonical_string(method, path, headers, expires=None):
         lk = key.lower()
         if headers[key] is not None and \
                 (lk in ['content-md5', 'content-type', 'date'] or
-                 lk.startswith(HeaderInfoMap[HEADER_PREFIX_KEY])):
+                     lk.startswith(HeaderInfoMap[HEADER_PREFIX_KEY])):
             interesting_headers[lk] = str(headers[key]).strip()
 
     # these keys get empty strings if they don't exist
@@ -617,9 +651,21 @@ elb_bucket = dict(cfg.items('ELBBucket'))
 for k, v in elb_bucket.iteritems():
     station_metadata_map['s3_bucket'].update({k: v})
 
-ips = dict(cfg.items('IPs'))
+ips = dict()
+section = 'IPs'
+options = cfg.options(section)
+for option in options:
+    try:
+        ips[option] = cfg.get(section, option)
+        if ips[option] == -1:
+            print_message("skip: %s" % option)
+    except:
+        print("exception on %s!" % option)
+        ips[option] = None
+
 for k, v in ips.iteritems():
     station_metadata_map['ip'].update({k: v})
+print ips
 
 # in_bandwidth = get_config_value('InBandwidths', station)
 in_bandwidth = dict(cfg.items('InBandwidths'))
@@ -632,3 +678,7 @@ for k, v in out_bandwidth.iteritems():
     station_metadata_map['out_bandwidths'].update({k: v})
 
 # print station_metadata_map
+
+# if __name__ == '__main__':
+#     results = get_stations_bandwidth('ap_south_1_client_1')
+#     print results
