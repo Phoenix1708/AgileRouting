@@ -185,7 +185,7 @@ class Route53Connection(AWSConnection):
         :param xml_body: change requests XML message body
 
         """
-        xml_body = '<?xml version="1.0" encoding="UTF-8"?>\n%s' % xml_body
+
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
         response_class = 'ChangeResourceRecordSetsResponse'
         header = {'Content-Type': 'text/xml'}

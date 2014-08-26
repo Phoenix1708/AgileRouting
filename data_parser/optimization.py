@@ -82,7 +82,7 @@ def calculate_cost_coef(total_requests, avg_data_in, avg_data_out, elb_price,
 #
 # # | #data  0    0    0   ... | > 52100 GB
 # # | #data  0    0    0   ... | < 153600 GB
-#     # ......
+# # ......
 #
 #     # | #data  0    0    0   ... | > 153600 GB
 #     # | #data  0    0    0   ... | < 512000 GB
@@ -455,9 +455,14 @@ def objective_function(variables, total_requests, data_in_per_reqs,
         ec2_cost = 0.120 * total_requests * data_out_per_reqs[i] * variables[i]
 
         service_time = math.pow(service_rates[i], -1)
-        latency = (service_time * m_interval) / \
-                  (m_interval - service_time * total_requests *
-                   variables[i]) + station_latency[i]
+        latency = \
+            service_time / \
+            (1 - service_time * (total_requests * variables[i]) / m_interval) +\
+            station_latency[i]
+
+        # latency = (service_time * m_interval) / \
+        #           (m_interval - service_time * total_requests *
+        #            variables[i]) + station_latency[i]
 
         result += elb_cost + ec2_cost + latency
 
@@ -520,8 +525,7 @@ def optimisation(num_of_stations, total_requests, elb_prices,
                  avg_data_in_per_reqs, avg_data_out_per_reqs,
                  in_bandwidths, out_bandwidths, budget,
                  service_rates, measurement_interval, station_latency):
-
-    variables = [1 for i in len(num_of_stations)]
+    variables = [1 for i in xrange(num_of_stations)]
 
     feasible_tuple = []
 
@@ -567,85 +571,92 @@ def optimisation(num_of_stations, total_requests, elb_prices,
 
         total_cost += elb_cost + ec2_cost
 
-        latency = (service_time * measurement_interval) / \
-                  (measurement_interval - service_time * total_requests *
-                   answer[i]) + station_latency[i]
+        latency = \
+            service_time / \
+            (1 - service_time * (total_requests * variables[i]) /
+             measurement_interval) + station_latency[i]
 
-        print_message('Expected latency : %s $' % latency)
+        # latency = (service_time * measurement_interval) / \
+        #           (measurement_interval - service_time * total_requests *
+        #            answer[i]) + station_latency[i]
 
-    print_message('Total cost : %s $' % total_cost)
+        print_message('')
+        print_message('Expected latency : %s' % latency)
+
+    print_message('')
+    print_message('Total cost: $%s ' % total_cost)
     # #### test ####
 
     return answer
 
 
-# if __name__ == '__main__':
-#     for i in f_range(1, 99, 0.1):
-#         print i
-#         print float(i) / 100.0
-#         print 1 - float(i) / 100.0
+    # if __name__ == '__main__':
+    #     for i in f_range(1, 99, 0.1):
+    #         print i
+    #         print float(i) / 100.0
+    #         print 1 - float(i) / 100.0
 
     # for i in xrange(1, 100):
     #     print float(i) / 100
     #     print 1 - float(i) / 100
     #     print float("inf")
 
-        #     A = matrix([[-1.0, -1.0, 0.0, 1.0], [1.0, -1.0, -1.0, -2.0]])
-        #     b = matrix([1.0, -2.0, 0.0, 4.0])
-        #     c = matrix([2.0, 1.0])
-        #     sol = solvers.lp(c, A, b)
-        #
-        #     print(sol['x'])
-        #     test = [sol['x'][i] for i in xrange(2)]
-        #     print test
-        #     print sol['x'][0]
-        #     print sol['x'][1]
-        #     print sol['x'][2]
+    #     A = matrix([[-1.0, -1.0, 0.0, 1.0], [1.0, -1.0, -1.0, -2.0]])
+    #     b = matrix([1.0, -2.0, 0.0, 4.0])
+    #     c = matrix([2.0, 1.0])
+    #     sol = solvers.lp(c, A, b)
+    #
+    #     print(sol['x'])
+    #     test = [sol['x'][i] for i in xrange(2)]
+    #     print test
+    #     print sol['x'][0]
+    #     print sol['x'][1]
+    #     print sol['x'][2]
 
-        # coefficients = [[
-        #      0,
-        #      1.5316553365099901e-07,
-        #      0,
-        #      0.001320873620062156,
-        #      0,
-        #      871.7494370007444,
-        #      0,
-        #      -1,
-        #      -1,
-        #      1,
-        #      0.0757350879782905],
-        #
-        #      [0, 1.5316553365099901e-07, 0, 0.001320873620062156, 0,
-        #       871.7494370007444, 0, -1, -1, 1, 0.0757350879782905]]
-        #
-        # right_hand_side = [
-        #     0.04541015625,
-        #     0.04748535156,
-        #     0.04541015625,
-        #     0.04748535156,
-        #     550.6225874560688,
-        #     560.8050746057617,
-        #     0,
-        #     0,
-        #     -0.9999999999,
-        #     1.0000000001,
-        #     1000000]
-        #
-        # obj_func_coef = [23429.924264912024, 23429.924264912024]
-        #
-        # a = matrix(coefficients)
-        # b = matrix(right_hand_side)
-        # c = matrix(obj_func_coef)
-        #
-        # sol = solvers.lp(c, a, b)
-        #
-        # print sol['x']
+    # coefficients = [[
+    #      0,
+    #      1.5316553365099901e-07,
+    #      0,
+    #      0.001320873620062156,
+    #      0,
+    #      871.7494370007444,
+    #      0,
+    #      -1,
+    #      -1,
+    #      1,
+    #      0.0757350879782905],
+    #
+    #      [0, 1.5316553365099901e-07, 0, 0.001320873620062156, 0,
+    #       871.7494370007444, 0, -1, -1, 1, 0.0757350879782905]]
+    #
+    # right_hand_side = [
+    #     0.04541015625,
+    #     0.04748535156,
+    #     0.04541015625,
+    #     0.04748535156,
+    #     550.6225874560688,
+    #     560.8050746057617,
+    #     0,
+    #     0,
+    #     -0.9999999999,
+    #     1.0000000001,
+    #     1000000]
+    #
+    # obj_func_coef = [23429.924264912024, 23429.924264912024]
+    #
+    # a = matrix(coefficients)
+    # b = matrix(right_hand_side)
+    # c = matrix(obj_func_coef)
+    #
+    # sol = solvers.lp(c, a, b)
+    #
+    # print sol['x']
 
-        # test = optimise(2, 1000, [0.008, 0.010], [29, 50], [100, 200], [50, 100],
-        #                 [0.5, 0.6], 4 / 5)
-        #
-        # test2 = optimise(2, 1000, [0.008, 0.008], [29, 29], [100, 100],
-        #                  [5000, 5000], [0.5, 0.5], 4 / 5)
+    # test = optimise(2, 1000, [0.008, 0.010], [29, 50], [100, 200], [50, 100],
+    #                 [0.5, 0.6], 4 / 5)
+    #
+    # test2 = optimise(2, 1000, [0.008, 0.008], [29, 29], [100, 100],
+    #                  [5000, 5000], [0.5, 0.5], 4 / 5)
 
-        # print test
-        # print test2
+    # print test
+    # print test2

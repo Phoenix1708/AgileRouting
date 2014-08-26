@@ -102,7 +102,8 @@ def _measure_latency(src_hosts, dst_hosts, measurement_interval):
 
         measurement_key = '%s,%s' % (src_host_name, to_host_name)
 
-        station_delay_dict.update({measurement_key: average_round_trip_delay})
+        station_delay_dict.update(
+            {measurement_key: float(average_round_trip_delay)})
 
     return station_delay_dict
 
@@ -131,15 +132,15 @@ def measure_latency(available_clients, available_stations, m_interval, queue):
     # return result_dict
 
 
-if __name__ == '__main__':
-
-    ip_host_name = ('54.255.65.145', 'ap_south_1_client_1')
-    module_path = os.path.dirname(Resources.__file__)
-    private_key_file_path = module_path + '/xueshisingapore.pem'
-
-    src_host = {ip_host_name: private_key_file_path}
-    to_host = {'176.34.66.152': 'xueshi-station-1'}
-    m_interval = 60
-
-    result_dict = _measure_latency(src_host, to_host, m_interval)
-    print result_dict
+# if __name__ == '__main__':
+#
+#     ip_host_name = ('54.255.65.145', 'ap_south_1_client_1')
+#     module_path = os.path.dirname(Resources.__file__)
+#     private_key_file_path = module_path + '/xueshisingapore.pem'
+#
+#     src_host = {ip_host_name: private_key_file_path}
+#     to_host = {'176.34.66.152': 'xueshi-station-1'}
+#     m_interval = 60
+#
+#     result_dict = _measure_latency(src_host, to_host, m_interval)
+#     print result_dict

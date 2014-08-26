@@ -74,11 +74,16 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
                            service_rates=service_rates_list,
                            measurement_interval=measurement_interval,
                            station_latency=station_latency)
-    print weights
-    # weights are fraction initially but Route53 only accept integer
+
+    print_message('Weights calculated for client %s: %s' % (client, weights))
+
+    # weights are fraction initially but Route53 only accept integer and
+    # must be an integer between 0 and 255
     # so we convert the ratio of weights to ratio of integers
     # this scaling should match the searching step of in optimisation
-    weights = [int(val * 1000) for val in weights]
+    # Weight
+    weights = [int(val * 255) for val in weights]
+
     route53_conn = Route53Connection()
     zone = route53_conn.get_zone(base_domain)
     elb_records = station_metadata_map['StationELBDNS']
@@ -86,25 +91,30 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
                      'xueshi-station-2': 'Z35SXDOTRQ7X7K'}
     # alias_zone_id = {'xueshi-station-1': 'Z3NF1Z3NOM5OY2',
     #                  'xueshi-station-2': 'Z3DZXE0Q79N41H'}
-    station_region = {'xueshi-station-1': 'ireland',
-                      'xueshi-station-2': 'nvirgina'}
+    station_region = {'ap_south_1_client_1': 'ireland',
+                      'us_east_1_client_1': 'nvirgina'}
     identifiers = dict(cfg.items('WRRAliasIdentifiers'))
     stations = get_available_stations()
     # Since we put optimisation parameter by the order available
     # stations the output weights should be in the same order
     station_weights = {}
     for idx in xrange(len(stations)):
-        station_weights.update({stations[idx]: weights[idx]})
+        station_weights.update({stations[idx]: int(round(weights[idx]))})
+
     for s_name, weights_val in station_weights.iteritems():
         alias_dns_name = elb_records[s_name]
         host_zone_id = alias_zone_id[s_name]
 
-        region_name = station_region[s_name]
+        # Client region not station region
+        region_name = station_region[client]
+
         dns_record_name = '%s.%s' % (region_name, base_domain)
         identifier = identifiers[dns_record_name]
         base_record = dict(name=dns_record_name,
                            record_type="A", weight=weights_val,
                            identifier=identifier)
+
+        print '[Debug]: weight before sending change request %s' % weights_val
 
         rrs = ResourceRecordSets(route53_conn, zone.id)
         new = rrs.add_change(action="UPSERT", **base_record)
@@ -374,7 +384,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # weights = [6, 4]
+    # weights = [162, 40]
     #
     # route53_conn = Route53Connection()
     # zone = route53_conn.get_zone(base_domain)
@@ -397,12 +407,13 @@ if __name__ == "__main__":
     # # stations the output weights should be in the same order
     # station_weights = {}
     # for idx in xrange(len(stations)):
-    # station_weights.update({stations[idx]: weights[idx]})
+    #     station_weights.update({stations[idx]: weights[idx]})
     #
     # for s_name, weights_val in station_weights.iteritems():
     #     alias_dns_name = elb_records[s_name]
     #     host_zone_id = alias_zone_id[s_name]
     #
+    #     # client region not server region
     #     region_name = station_region[s_name]
     #     dns_record_name = '%s.%s' % (region_name, base_domain)
     #     identifier = identifiers[dns_record_name]

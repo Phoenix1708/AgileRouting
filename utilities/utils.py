@@ -272,7 +272,10 @@ def get_expected_num_logs():
     (For code re-usability)
     """
     measurement_interval = cfg.get_int('Default', 'measurement_interval', 10)
+
+    print_message('')
     print_message('Measurement interval: %s' % measurement_interval)
+
     logging_time = cfg.get_int('s3', 'log_omitting_time', 5)
     expected_logs_to_obtain = math.floor(measurement_interval / logging_time)
 
