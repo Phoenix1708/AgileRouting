@@ -45,7 +45,7 @@ class Route53Connection(AWSConnection):
 
         return super(Route53Connection, self).send_request(
             action, path, response_class, headers, data,
-            retry_handler=self._retry_handler)
+            retry_handler=self.retry_handler)
 
     def get_all_hosted_zones(self, start_marker=None):
         """
@@ -278,7 +278,8 @@ class Route53Connection(AWSConnection):
                 value = "%s." % value
             return value
 
-    def _retry_handler(self, response, retry_counter):
+    @staticmethod
+    def retry_handler(response, retry_counter):
         """
         Mainly handle HTTP 400. HTTP 400 error it can be ignored since
         Route53 API has certain limitations, which might cause 400 error

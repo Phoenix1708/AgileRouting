@@ -262,7 +262,7 @@ def print_message(msg):
 
 
 def log_info(log_file_name, data_to_write):
-    with open(log_file_name, 'wa') as f:
+    with open(log_file_name, 'a+') as f:
         f.write(data_to_write + '\n')
 
 

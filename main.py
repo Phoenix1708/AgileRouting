@@ -7,6 +7,7 @@ from data_parser.optimization import optimise, optimisation
 from data_parser.s3.process_access_log import process_elb_access_log
 from etc.configuration import setup_logging, cfg
 from models.resource_record_set import ResourceRecordSets
+from utilities.exception import UnsuccessfulRequestError
 from utilities.heart_beater import measure_latency
 from utilities.multi_threading import ThreadingManager
 from utilities.utils import get_station_region, get_available_stations, \
@@ -61,8 +62,8 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
     # avg_data_out_per_reqs=avg_out_data,
     # in_bandwidths=in_bandwidths,
     # out_bandwidths=out_bandwidths,
-    #                    budget=budget, service_rates=service_rates_list,
-    #                    measurement_interval=measurement_interval, k=1)
+    # budget=budget, service_rates=service_rates_list,
+    # measurement_interval=measurement_interval, k=1)
     weights = optimisation(num_of_stations=2,
                            total_requests=request_sum,
                            elb_prices=elb_prices,
@@ -91,9 +92,11 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
                      'xueshi-station-2': 'Z35SXDOTRQ7X7K'}
     # alias_zone_id = {'xueshi-station-1': 'Z3NF1Z3NOM5OY2',
     #                  'xueshi-station-2': 'Z3DZXE0Q79N41H'}
-    station_region = {'ap_south_1_client_1': 'ireland',
-                      'us_east_1_client_1': 'nvirgina'}
-    identifiers = dict(cfg.items('WRRAliasIdentifiers'))
+    clients_regions = {'ap_south_1_client_1': 'ireland',
+                       'us_east_1_client_1': 'nvirgina'}
+
+    identifiers = dict(cfg.items('StationWRRAliasIdentifiers'))
+
     stations = get_available_stations()
     # Since we put optimisation parameter by the order available
     # stations the output weights should be in the same order
@@ -101,25 +104,41 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
     for idx in xrange(len(stations)):
         station_weights.update({stations[idx]: int(round(weights[idx]))})
 
+    rrs = ResourceRecordSets(route53_conn, zone.id)
+
     for s_name, weights_val in station_weights.iteritems():
         alias_dns_name = elb_records[s_name]
         host_zone_id = alias_zone_id[s_name]
 
         # Client region not station region
-        region_name = station_region[client]
+        region_name = clients_regions[client]
 
         dns_record_name = '%s.%s' % (region_name, base_domain)
-        identifier = identifiers[dns_record_name]
+        identifier = identifiers[s_name]
         base_record = dict(name=dns_record_name,
                            record_type="A", weight=weights_val,
                            identifier=identifier)
 
         print '[Debug]: weight before sending change request %s' % weights_val
 
-        rrs = ResourceRecordSets(route53_conn, zone.id)
         new = rrs.add_change(action="UPSERT", **base_record)
         new.set_alias(host_zone_id, unicode(alias_dns_name), False)
-        rrs.commit()
+
+    # with retry in case request rejected due to proc
+    succeed = False
+    while not succeed:
+        try:
+            rrs.commit()
+            succeed = True
+        except UnsuccessfulRequestError as e:
+
+            retriable_err = 'The request was rejected because Route 53 ' \
+                            'was still processing a prior request'
+            if retriable_err in e.body:
+                # pause for a while before send another request
+                time.sleep(3)
+                print_message('Previous request to Route 53 in progress.\n '
+                              'Re-sending request...')
 
     print_message('Weights set for client %s: %s' % (client, weights))
 
@@ -234,7 +253,7 @@ def main():
         service_rates = dict()
 
         # name of the file that record metrics
-        metric_record_file = 'Metrics.txt'
+        metric_record_file = 'metrics.txt'
 
         for station_metric in station_metric_list:
             # getting metric
@@ -361,7 +380,6 @@ def main():
         # do optimisation for each client in a new threads
         optimiser = ThreadingManager()
         for client in available_clients:
-
             optimiser.start_tasks(
                 target_func=clients_optimisation,
                 name="optimiser",
@@ -375,11 +393,11 @@ def main():
         # synchronising threads
         optimiser.collect_results()
 
-            # clients_optimisation(avg_data_in_per_reqs,
-            #                      avg_data_out_per_reqs, client,
-            #                      elb_prices, latency_results_dict,
-            #                      measurement_interval, service_rates,
-            #                      stations, total_request_per_client)
+        # clients_optimisation(avg_data_in_per_reqs,
+        # avg_data_out_per_reqs, client,
+        # elb_prices, latency_results_dict,
+        #                      measurement_interval, service_rates,
+        #                      stations, total_request_per_client)
 
 
 if __name__ == "__main__":
@@ -397,10 +415,10 @@ if __name__ == "__main__":
     # # alias_zone_id = {'xueshi-station-1': 'Z3NF1Z3NOM5OY2',
     # #                  'xueshi-station-2': 'Z3DZXE0Q79N41H'}
     #
-    # station_region = {'xueshi-station-1': 'ireland',
-    # 'xueshi-station-2': 'nvirgina'}
+    # station_region = {'ap_south_1_client_1': 'ireland',
+    # 'us_east_1_client_1': 'nvirgina'}
     #
-    # identifiers = dict(cfg.items('WRRAliasIdentifiers'))
+    # identifiers = dict(cfg.items('StationWRRAliasIdentifiers'))
     #
     # stations = get_available_stations()
     # # Since we put optimisation parameter by the order available
@@ -409,22 +427,26 @@ if __name__ == "__main__":
     # for idx in xrange(len(stations)):
     #     station_weights.update({stations[idx]: weights[idx]})
     #
+    # rrs = ResourceRecordSets(route53_conn, zone.id)
+    #
+    # client = 'ap_south_1_client_1'
+    #
     # for s_name, weights_val in station_weights.iteritems():
     #     alias_dns_name = elb_records[s_name]
     #     host_zone_id = alias_zone_id[s_name]
     #
     #     # client region not server region
-    #     region_name = station_region[s_name]
+    #     region_name = station_region[client]
     #     dns_record_name = '%s.%s' % (region_name, base_domain)
-    #     identifier = identifiers[dns_record_name]
+    #     identifier = identifiers[s_name]
     #     base_record = dict(name=dns_record_name,
     #                        record_type="A", weight=weights_val,
     #                        identifier=identifier)
     #
-    #     rrs = ResourceRecordSets(route53_conn, zone.id)
     #     new = rrs.add_change(action="UPSERT", **base_record)
     #     new.set_alias(host_zone_id, unicode(alias_dns_name), False)
-    #     change_result = rrs.commit()
+    #
+    # change_result = rrs.commit()
 
     # log_info(metric_record_file, 'Station weights: %s'
     #          % station_weights)
