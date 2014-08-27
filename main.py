@@ -93,10 +93,12 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
     elb_records = station_metadata_map['StationELBDNS']
     alias_zone_id = {'xueshi-station-1': 'Z32O12XQLNTSW2',
                      'xueshi-station-2': 'Z35SXDOTRQ7X7K'}
-    # alias_zone_id = {'xueshi-station-1': 'Z3NF1Z3NOM5OY2',
-    # 'xueshi-station-2': 'Z3DZXE0Q79N41H'}
+
+    # TODO: This is actually which region of the server user most closet to
+    # need to be mapped to IPs
     clients_regions = {'ap_south_1_client_1': 'ireland',
-                       'us_east_1_client_1': 'nvirginia'}
+                       'us_east_1_client_1': 'nvirginia',
+                       'us_west_1_client_1': 'nvirginia'}
 
     identifiers = dict(cfg.items('StationWRRAliasIdentifiers'))
 

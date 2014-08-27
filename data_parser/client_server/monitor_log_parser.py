@@ -161,18 +161,23 @@ def parse_monitor_log(input_files_dir, line_counter):
                 # has one record that is only partially written, hence
                 # ignore this record
 
-                # if vm_id and metric_name and metric_value and timestamps:
+                # This "if" shouldn't be here since I skipped those records that
+                # are mixed up... but for some reason values below could
+                # still be None... It is much more convenient to fix csparql log
+                # rather than thinking out logic to patching up for this
+                if vm_id and metric_name and metric_value and timestamps:
 
-                result_dir_path = parsed_file_dir + sub_folder_name + vm_id
+                    result_dir_path = parsed_file_dir + sub_folder_name + vm_id
 
-                if not os.path.exists(result_dir_path):
-                    os.makedirs(result_dir_path)
+                    if not os.path.exists(result_dir_path):
+                        os.makedirs(result_dir_path)
 
-                result_file_path = result_dir_path + '/' + metric_name + '.txt'
+                    result_file_path = \
+                        result_dir_path + '/' + metric_name + '.txt'
 
-                with open(result_file_path, 'a') as parsed_f:
-                    parsed_f.write(metric_value + '\n')
-                    parsed_f.write(timestamps + '\n')
+                    with open(result_file_path, 'a') as parsed_f:
+                        parsed_f.write(metric_value + '\n')
+                        parsed_f.write(timestamps + '\n')
 
                 # current metric become the last after finish
                 # processing its value

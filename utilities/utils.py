@@ -66,13 +66,13 @@ def get_env(env_var_name):
 # if not ip:
 # raise GeneralError(msg="No IP configuration
 # found for host name \'%s\'."
-#                                % host_name)
-#     return ip
+# % host_name)
+# return ip
 #
 #
 # def get_elb_bucket(station_name):
-#     elb_bucket = cfg.get('ELBBucket', station_name, None)
-#     if not elb_bucket:
+# elb_bucket = cfg.get('ELBBucket', station_name, None)
+# if not elb_bucket:
 #         raise GeneralError(msg="No access log location (S3 buckets) "
 #                                "configuration found for station "
 #                                "\'%s\'." % station_name)
@@ -94,7 +94,8 @@ def get_available_stations():
 
 def get_available_clients():
     # TODO: needs to be dynamic in the future
-    return ['ap_south_1_client_1', 'us_east_1_client_1']
+    # return ['ap_south_1_client_1', 'us_east_1_client_1']
+    return ['ap_south_1_client_1', 'us_west_1_client_1']
 
 
 def get_stations_bandwidth(client):
@@ -310,40 +311,53 @@ def get_next_nth_elb_log_time(n, last_expected_minutes):
 
     logging_interval = cfg.get_int('s3', 'log_omitting_time', 60)
 
-    next_expected_logging_minute = 0
     if not last_expected_minutes:
         interval_covered = math.ceil(minute / logging_interval)
         reminder = minute % logging_interval
 
-        next_expected_logging_minute = \
+        next_expected_minute = \
             logging_interval * interval_covered + logging_interval * (n - 1)
 
         # it the current minute is happen to be a logging time
         # i.e 5, 10, 15 etc.
         if reminder == 0:
-            next_expected_logging_minute += n * logging_interval
+            next_expected_minute = minute + n * logging_interval
 
     else:
-        next_expected_logging_minute += \
+        next_expected_minute = \
             last_expected_minutes + n * logging_interval
 
-    if next_expected_logging_minute >= 60:
-        hour += 1
-        next_expected_logging_minute %= 60
+    if minute - next_expected_minute < logging_interval:
+        max_waiting_minutes = \
+            next_expected_minute + logging_interval - minute
+
+    elif next_expected_minute >= minute:
+        max_waiting_minutes = \
+            next_expected_minute - minute + logging_interval
+    else:
+        print_message('[Debug] Waiting for too long\nCurrent expected logging '
+                      'minute (continuous counting): %s\nCurrent time: %s'
+                      % (next_expected_minute,
+                         '-'.join([str('%02d' % hour),
+                                   str('%02d' % minute)])))
+    new_hour = hour
+    if next_expected_minute >= 60:
+        new_hour += 1
+        next_expected_minute %= 60
 
     print_message('Next expected time (UTC) %02d:%02d'
-                  % (hour, next_expected_logging_minute))
+                  % (new_hour, next_expected_minute))
 
-    if next_expected_logging_minute < minute:
-        max_waiting_minutes = \
-            60 - minute + next_expected_logging_minute + logging_interval
-    else:
-        max_waiting_minutes = \
-            next_expected_logging_minute - minute + logging_interval
+    # if next_expected_logging_minute < minute:
+    #     max_waiting_minutes = \
+    #         60 - minute + next_expected_logging_minute + logging_interval
+    # else:
+    #     max_waiting_minutes = \
+    #         next_expected_logging_minute - minute + logging_interval
 
     print_message('[Debug]: max_waiting_minutes: %s' % max_waiting_minutes)
 
-    return day, hour, month, next_expected_logging_minute, year, \
+    return day, new_hour, month, next_expected_minute, year, \
            max_waiting_minutes
 
 
