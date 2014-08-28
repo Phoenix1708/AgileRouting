@@ -368,7 +368,7 @@ def main():
         # counter += 1
         # time.sleep(20)
 
-        # TODO: Get elb price and SLA from config
+        # TODO: Get elb price from config
 
         # ELB pricing
         elb_prices = [0.008, 0.008]

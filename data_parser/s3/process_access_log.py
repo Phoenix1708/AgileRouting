@@ -216,9 +216,13 @@ def process_access_log(bucket, elb_region, elb_name):
     # maintain the last log omitting minutes that dealt with
     last_expected_time = None
 
+    # flag indicating that the process needs to stop before obtaining
+    # expected number of logs that matches measurement interval
+    need_to_stop = False
+
     # check whether the it has reached the end of measurement interval
     # while (time.time() - start_time) / 60 <= m_interval:
-    while logs_obtained < expected_logs_to_obtain:
+    while logs_obtained < expected_logs_to_obtain and not need_to_stop:
 
         request_headers, max_waiting_time, last_expected_time \
             = calculate_key_prefix(elb_region, elb_name, last_expected_time)
@@ -252,13 +256,21 @@ def process_access_log(bucket, elb_region, elb_name):
             # The next expected minus should be re calculated base on its
             # last value i.e the last "next expected minus"
             if time_counter > max_waiting_time:
-                print_message('')
-                print_message('Re-calculating expected log file...')
-                request_headers, max_waiting_time, last_expected_time \
-                    = calculate_key_prefix(elb_region, elb_name,
-                                           last_expected_time)
-                time_counter = 0
-                continue
+                # Generally if waiting time exceed the maximum time
+                # calculated there could either be some error during ELB
+                # access log omission in S3 in which case the waiting time is
+                #  unpredictable OR it is the end of the simulation. Either
+                # case we need to stop waiting for S3
+                need_to_stop = True
+                break
+
+                # print_message('')
+                # print_message('Re-calculating expected log file...')
+                # request_headers, max_waiting_time, last_expected_time \
+                #     = calculate_key_prefix(elb_region, elb_name,
+                #                            last_expected_time)
+                # time_counter = 0
+                # continue
 
             print_message('Waiting for log to be omitted (polling interval %s '
                           'seconds) ...\n' % log_polling_interval)
