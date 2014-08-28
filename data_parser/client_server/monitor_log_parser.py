@@ -101,7 +101,7 @@ def parse_monitor_log(input_files_dir, line_counter):
         expected_properties = ['isAbout', 'isProducedBy',
                                'hasMonitoredMetric', 'hasValue',
                                'hasTimeStamp']
-        expected_prop_counter = 0  # counter to keep track of order of
+        expected_prop_idx = 0  # counter to keep track of order of
         # expected properties encountered
 
         for current_line in f:
@@ -139,18 +139,26 @@ def parse_monitor_log(input_files_dir, line_counter):
             #  for the current metric ID we skip as well. Except
             # that when expecting 'isAbout' i.e the first property,
             # we don't check for metric ID, since it could be a new metric
-            if metric_prop != expected_properties[expected_prop_counter] or \
-               (expected_prop_counter != 0 and metric_id != last_metric_id):
-                # Skip to the next 'isAbout' line
-                expected_prop_counter = 0  # expecting the 'isAbout'
-                skip_counter += 1
-                continue
+            if metric_prop != expected_properties[expected_prop_idx] or \
+               (expected_prop_idx != 0 and metric_id != last_metric_id):
+                # if an 'isAbout' encountered we assume the following
+                # lines could possible be in order
+                if metric_prop == 'isAbout':
+                    # start fresh
+                    expected_prop_idx = 0
+                    last_metric_id = metric_id
+                else:
+                    # Skip to the next 'isAbout' line
+                    expected_prop_idx = 0  # expecting the 'isAbout'
+                    last_metric_id = None
+                    skip_counter += 1
+                    continue
 
             # if the metric property is expected then expect the next one
-            if expected_prop_counter == len(expected_properties) - 1:
-                expected_prop_counter = 0
+            if expected_prop_idx == len(expected_properties) - 1:
+                expected_prop_idx = 0
             else:
-                expected_prop_counter += 1
+                expected_prop_idx += 1
 
             # save reading of last metric since following reading
             # will be of a new metric id

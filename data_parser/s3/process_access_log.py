@@ -108,7 +108,7 @@ class DataAccumulatorManager(ThreadingManager):
         # return '%s,%s' % (self.total_receive, self.total_sent)
 
 
-def calculate_key_prefix(elb_region, elb_name, last_expected_minutes):
+def calculate_key_prefix(elb_region, elb_name, last_expected_time):
     """Function that calculate the prefix for bucket key searching
 
     :param elb_region:
@@ -117,19 +117,24 @@ def calculate_key_prefix(elb_region, elb_name, last_expected_minutes):
     """
     print_message('Retrieving access log for %s ...' % elb_name)
 
-    day, hour, month, next_expected_logging_minute, year, max_waiting_minutes\
-        = get_next_nth_elb_log_time(1, last_expected_minutes)
+    next_expected_time, max_waiting_time\
+        = get_next_nth_elb_log_time(1, last_expected_time)
 
-    last_expected_minutes = next_expected_logging_minute
+    last_expected_time = next_expected_time
+
+    year, month, day, hour, minute = next_expected_time.year, \
+                                     next_expected_time.month, \
+                                     next_expected_time.day, \
+                                     next_expected_time.hour, \
+                                     next_expected_time.minute
 
     # convert month, day, hour and minute to 2 digit representation
     month = '%02d' % month
     day = '%02d' % day
     hour = '%02d' % hour
-    next_expected_logging_minute = '%02d' % next_expected_logging_minute
+    minute = '%02d' % minute
     # The time string that the expected log file should contain
-    time_str = "%s%s%sT%s%sZ" % (year, month, day, hour,
-                                 next_expected_logging_minute)
+    time_str = "%s%s%sT%s%sZ" % (year, month, day, hour, minute)
 
     aws_account_id = str(305933725014)
     region = elb_region
@@ -150,7 +155,7 @@ def calculate_key_prefix(elb_region, elb_name, last_expected_minutes):
 
     request_headers = {'prefix': unicode(key_prefix), 'delimiter': '.log'}
 
-    return request_headers, max_waiting_minutes, last_expected_minutes
+    return request_headers, max_waiting_time, last_expected_time
 
 
 def process_access_log(bucket, elb_region, elb_name):
@@ -209,14 +214,14 @@ def process_access_log(bucket, elb_region, elb_name):
     expected_logs_to_obtain = get_expected_num_logs()
 
     # maintain the last log omitting minutes that dealt with
-    last_expected_minutes = None
+    last_expected_time = None
 
     # check whether the it has reached the end of measurement interval
     # while (time.time() - start_time) / 60 <= m_interval:
     while logs_obtained < expected_logs_to_obtain:
 
-        request_headers, max_waiting_minutes, last_expected_minutes \
-            = calculate_key_prefix(elb_region, elb_name, last_expected_minutes)
+        request_headers, max_waiting_time, last_expected_time \
+            = calculate_key_prefix(elb_region, elb_name, last_expected_time)
 
         matching_keys = []
         # In case of total waiting time exceed the S3
@@ -246,12 +251,12 @@ def process_access_log(bucket, elb_region, elb_name):
             # DeveloperGuide/access-log-collection.html
             # The next expected minus should be re calculated base on its
             # last value i.e the last "next expected minus"
-            if time_counter / 60 > max_waiting_minutes:
+            if time_counter > max_waiting_time:
                 print_message('')
                 print_message('Re-calculating expected log file...')
-                request_headers, max_waiting_minutes, last_expected_minutes \
+                request_headers, max_waiting_time, last_expected_time \
                     = calculate_key_prefix(elb_region, elb_name,
-                                           last_expected_minutes)
+                                           last_expected_time)
                 time_counter = 0
                 continue
 

@@ -10,7 +10,7 @@ import urllib
 import urllib2
 import math
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import paramiko
 from etc.configuration import log, cfg
 from utilities.exception import GeneralError
@@ -73,9 +73,9 @@ def get_env(env_var_name):
 # def get_elb_bucket(station_name):
 # elb_bucket = cfg.get('ELBBucket', station_name, None)
 # if not elb_bucket:
-#         raise GeneralError(msg="No access log location (S3 buckets) "
-#                                "configuration found for station "
-#                                "\'%s\'." % station_name)
+# raise GeneralError(msg="No access log location (S3 buckets) "
+# "configuration found for station "
+# "\'%s\'." % station_name)
 #     return elb_bucket
 
 
@@ -283,7 +283,7 @@ def get_expected_num_logs():
     return expected_logs_to_obtain
 
 
-def get_next_nth_elb_log_time(n, last_expected_minutes):
+def get_next_nth_elb_log_time(n, last_expected_time):
     """
     Get the next minutes e.g 5 or 10 or 15 that the S3 will omit ELB access
     log. It can also get the time of next nth log base on current time
@@ -292,16 +292,23 @@ def get_next_nth_elb_log_time(n, last_expected_minutes):
     """
 
     current_time = datetime.utcnow()
-    [year, month, day, hour, minute] = \
-        current_time.year, current_time.month, current_time.day, \
-        current_time.hour, current_time.minute
 
-    # Test
-    print_message('Current UTC Time: %s' % '-'.join([str(year),
-                                                     str('%02d' % month),
-                                                     str('%02d' % day),
-                                                     str('%02d' % hour),
-                                                     str('%02d' % minute)]))
+    print_message('Current UTC Time: %s'
+                  % '-'.join([str(current_time.year),
+                              str('%02d' % current_time.month),
+                              str('%02d' % current_time.day),
+                              str('%02d' % current_time.hour),
+                              str('%02d' % current_time.minute)]))
+
+    # [year, month, day, hour, minute] = \
+    #     current_time.year, current_time.month, current_time.day, \
+    #     current_time.hour, current_time.minute
+    #
+    # print_message('Current UTC Time: %s' % '-'.join([str(year),
+    #                                                  str('%02d' % month),
+    #                                                  str('%02d' % day),
+    #                                                  str('%02d' % hour),
+    #                                                  str('%02d' % minute)]))
 
     # Calculate the next expected log file omitted by S3.
     # With 5 minute logging interval, logs are omitted every 5 minutes
@@ -311,42 +318,69 @@ def get_next_nth_elb_log_time(n, last_expected_minutes):
 
     logging_interval = cfg.get_int('s3', 'log_omitting_time', 60)
 
-    if not last_expected_minutes:
-        interval_covered = math.ceil(minute / logging_interval)
-        reminder = minute % logging_interval
+    if not last_expected_time:
+        interval_covered = math.ceil(current_time.minute / logging_interval)
+        reminder = current_time.minute % logging_interval
 
-        next_expected_minute = \
-            logging_interval * interval_covered + logging_interval * (n - 1)
+        time_delta = \
+            logging_interval * interval_covered + logging_interval * (n - 1) -\
+            current_time.minute
+
+        next_expected_time = current_time + timedelta(minutes=time_delta)
+
+        # next_expected_minute = \
+        #     logging_interval * interval_covered + logging_interval * (n - 1)
 
         # it the current minute is happen to be a logging time
         # i.e 5, 10, 15 etc.
         if reminder == 0:
-            next_expected_minute = minute + n * logging_interval
-
+            time_delta = n * logging_interval
+            next_expected_time = current_time + timedelta(minutes=time_delta)
+            # next_expected_minute = minute + n * logging_interval
     else:
-        next_expected_minute = \
-            last_expected_minutes + n * logging_interval
+        min_delta = n * logging_interval
+        next_expected_time = last_expected_time + timedelta(minutes=min_delta)
 
-    if minute - next_expected_minute < logging_interval:
-        max_waiting_minutes = \
-            next_expected_minute + logging_interval - minute
+        # next_expected_minute = \
+        #     last_expected_minutes + n * logging_interval
 
-    elif next_expected_minute >= minute:
-        max_waiting_minutes = \
-            next_expected_minute - minute + logging_interval
+        # .seconds // 60) % 60
+
+    # (timespot - lasttime).days * 24 * 60 * 60 + (timespot - lasttime).seconds
+    # 10863
+    # timedelta(seconds=10863)
+
+    if next_expected_time < current_time:
+        t_delta = current_time - next_expected_time
+        over_due_sec = t_delta.days * 24 * 60 * 60 + t_delta.seconds
+
+        if over_due_sec <= logging_interval * 60:
+            waiting_td = \
+                next_expected_time + timedelta(seconds=logging_interval * 60) \
+                - current_time
+
+            max_waiting_time = \
+                waiting_td.days * 24 * 60 * 60 + waiting_td.seconds
+        else:
+            max_waiting_time = 0
+            print_message('[Fatal!] Waiting for too long\n'
+                          'Current expected logging time %s\n'
+                          'Current time: %s'
+                          % (next_expected_time, current_time))
+
+    elif next_expected_time > current_time:
+        waiting_td = next_expected_time - current_time
+        max_waiting_time = waiting_td.days * 24 * 60 * 60 + \
+                           waiting_td.seconds + logging_interval * 60
     else:
-        print_message('[Debug] Waiting for too long\nCurrent expected logging '
-                      'minute (continuous counting): %s\nCurrent time: %s'
-                      % (next_expected_minute,
-                         '-'.join([str('%02d' % hour),
-                                   str('%02d' % minute)])))
-    new_hour = hour
-    if next_expected_minute >= 60:
-        new_hour += 1
-        next_expected_minute %= 60
+        max_waiting_time = logging_interval * 60
 
-    print_message('Next expected time (UTC) %02d:%02d'
-                  % (new_hour, next_expected_minute))
+    print_message('Next expected time (UTC) %s'
+                  % '-'.join([str(next_expected_time.year),
+                              str('%02d' % next_expected_time.month),
+                              str('%02d' % next_expected_time.day),
+                              str('%02d' % next_expected_time.hour),
+                              str('%02d' % next_expected_time.minute)]))
 
     # if next_expected_logging_minute < minute:
     #     max_waiting_minutes = \
@@ -355,10 +389,15 @@ def get_next_nth_elb_log_time(n, last_expected_minutes):
     #     max_waiting_minutes = \
     #         next_expected_logging_minute - minute + logging_interval
 
-    print_message('[Debug]: max_waiting_minutes: %s' % max_waiting_minutes)
+    print_message('[Debug]: max_waiting_minutes: %s' % (max_waiting_time / 60))
 
-    return day, new_hour, month, next_expected_minute, year, \
-           max_waiting_minutes
+    return next_expected_time, max_waiting_time
+    # [year, month, day, hour, minute] = \
+    #     current_time.year, current_time.month, current_time.day, \
+    #     current_time.hour, current_time.minute
+    #
+    # return day, new_hour, month, next_expected_minute, year, \
+    #        max_waiting_minutes
 
 
 def calculate_waiting_time():
@@ -368,12 +407,21 @@ def calculate_waiting_time():
     expected_logs = get_expected_num_logs()
 
     # calculate the time for which the last expected access log is
-    day, hour, month, next_expected_logging_minute, year, max_waiting_minutes \
+    next_expected_time, max_waiting_time \
         = get_next_nth_elb_log_time(expected_logs, None)
+
+    year, month, day, hour, minute = next_expected_time.year, \
+                                     next_expected_time.month, \
+                                     next_expected_time.day, \
+                                     next_expected_time.hour, \
+                                     next_expected_time.minute
+
+    # day, hour, month, next_expected_logging_minute, year, max_waiting_minutes \
+    #     = get_next_nth_elb_log_time(expected_logs, None)
 
     # from UTC to GMT hour + 1
     time_str = ''.join([str(year), str(month), str(day), str(hour + 1),
-                        str(int(next_expected_logging_minute))])
+                        str(int(minute))])
     date = datetime.strptime("".join(time_str), '%Y%m%d%H%M')
     date_milli = time.mktime(date.timetuple()) + date.microsecond
     # calculate waiting time
