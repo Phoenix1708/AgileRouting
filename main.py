@@ -183,15 +183,18 @@ def main():
         # Processing csparql log and ELB access log simultaneously by 2 threads
 
         # Start csparql log paring first since ELB access log has delay
-        # omitting the log file
+        # emitting the log file
 
         # First we need to calculate how much time to wait before retrieving
         # csparql logs. i.e how long the actual measurement time is. Since S3
-        # only omit log at 5, 10, 15 etc. minute of the hour, we can only
+        # only emit log at 5, 10, 15 etc. minute of the hour, we can only
         # measure the time that measurement start until the last expected log
         # omission time which is not the actual time that log being obtained
         # since there is delay
         measurement_interval = calculate_waiting_time()
+
+        # no need to wait until log actually being obtained
+        measurement_interval -= 300
 
         # Measuring latency between each client region and service station
         latency_manager = ThreadingManager()
@@ -341,8 +344,10 @@ def main():
                 # avg_data_in_per_req = d_in / requests
                 # avg_data_out_per_req = d_out / requests
                 #
-                # avg_data_in_per_reqs.update({station_name: avg_data_in_per_req})
-                # avg_data_out_per_reqs.update({station_name: avg_data_out_per_req})
+                # avg_data_in_per_reqs.update(
+                # {station_name: avg_data_in_per_req})
+                # avg_data_out_per_reqs.update(
+                # {station_name: avg_data_out_per_req})
 
         # For testing purpose
         info_str = \

@@ -70,12 +70,10 @@ class HmacKeys(object):
         return pickled_dict
 
 
-class HmacAuthV1Handler(AuthHandler, HmacKeys):
-    """ Implements the HMAC request signing used by S3."""
+class S3HmacAuthHandler(AuthHandler, HmacKeys):
+    """ HMAC request signing of S3."""
 
-    capability = ['hmac-v1', 's3']
-
-    caonimalegebi = ['caonima']
+    capability = ['s3']
 
     def __init__(self, host, config):
         AuthHandler.__init__(self, config)
@@ -99,7 +97,6 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
 
         string_to_sign = canonical_string(method, auth_path, headers, None)
 
-        log.debug('StringToSign:\n%s' % string_to_sign)
         b64_hmac = self.sign_string(string_to_sign)
         auth_hdr = HeaderInfoMap[AUTH_HEADER_KEY]
         auth = ("%s %s:%s" % (auth_hdr, self.access_key, b64_hmac))
@@ -107,10 +104,10 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         headers['Authorization'] = auth
 
 
-class HmacAuthV3Handler(AuthHandler, HmacKeys):
-    """Implements the (Version 3) HMAC authorization used by Route53."""
+class R53HmacAuthHandler(AuthHandler, HmacKeys):
+    """ HMAC request signing of Route53."""
 
-    capability = ['hmac-v3', 'route53', 'ses']
+    capability = ['route53']
 
     def __init__(self, host, config):
         AuthHandler.__init__(self, config)

@@ -14,7 +14,7 @@ def remove_data(data, category_list, delete):
         # for j in delete:
         #
         # # fill in the gap between length of data and the target index
-        #     if len(data[i]) < j+1 or len(data[i]) == 0:
+        # if len(data[i]) < j+1 or len(data[i]) == 0:
         #         for k in range(j+1 - (len(data[i]))):
         #             data[i].append([])
 
@@ -67,9 +67,9 @@ def format_data(data, period, category_list, cpu_file):
         if data[2][i] and max_time > max(data[2][i]):
             max_time = max(data[2][i])
 
-    n = int(math.floor(((max_time - start_time) / period)))
+    samples = int(math.floor(((max_time - start_time) / period)))
 
-    print_message('Number of samples (interval:%s) : %s' % (period, n))
+    print_message('Number of samples (interval:%s) : %s' % (period, samples))
 
     for i in xrange(len(data[2]) - 1):
         end_time = start_time
@@ -82,9 +82,9 @@ def format_data(data, period, category_list, cpu_file):
 
         # departure = []
         # for j in xrange(len(data[2][i])):
-        #     departure.append(data[2][i][j] + data[3][i][j] * 1000)
+        # departure.append(data[2][i][j] + data[3][i][j] * 1000)
 
-        for k in xrange(n):
+        for k in xrange(samples):
 
             index = [v[0] for v in enumerate(departure)
                      if end_time <= v[1] < (end_time + period)]
@@ -96,13 +96,12 @@ def format_data(data, period, category_list, cpu_file):
             if index:
                 response_times = [data[3][i][idx] for idx in index]
             data[4][i].append(scipy.mean(response_times))
-            data[5][i].append(len(index)/period*1000)
+            data[5][i].append(len(index) / period * 1000)
             data[6][i].append(len(index))
             data[7][i].append(len(arr_index))
 
             data[0][i].append(end_time + period)
             end_time += period
-
 
             # if no departure time beyond the end
             # time of current sampling interval
@@ -134,15 +133,16 @@ def format_data(data, period, category_list, cpu_file):
             #     data[0][i].append(end_time + period)
             #     end_time += period
 
-    max_length = 0
-    max_index = 0
+    # Number of samples for each request might not be equal
+    max_num_requests = 0
+    max_requests_idx = 0
     for i in xrange(len(data[2]) - 1):
-        if max_length < len(data[2][i]):
-            max_length = len(data[2][i])
-            max_index = i
+        if max_num_requests < len(data[2][i]):
+            max_num_requests = len(data[2][i])
+            max_requests_idx = i
 
     for i in xrange(len(data[2]) - 1):
-        data[0][i] = data[0][max_index]
+        data[0][i] = data[0][max_requests_idx]
         if len(data[4][i]) < len(data[0][i]):
             data[4][i].append([0] * (len(data[0][i]) - len(data[4][i])))
             data[5][i].append([0] * (len(data[0][i]) - len(data[5][i])))

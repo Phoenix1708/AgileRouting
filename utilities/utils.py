@@ -277,7 +277,7 @@ def get_expected_num_logs():
     print_message('')
     print_message('Measurement interval: %s' % measurement_interval)
 
-    logging_time = cfg.get_int('s3', 'log_omitting_time', 5)
+    logging_time = cfg.get_int('s3', 'log_emitting_time', 5)
     expected_logs_to_obtain = math.floor(measurement_interval / logging_time)
 
     return expected_logs_to_obtain
@@ -285,7 +285,7 @@ def get_expected_num_logs():
 
 def get_next_nth_elb_log_time(n, last_expected_time):
     """
-    Get the next minutes e.g 5 or 10 or 15 that the S3 will omit ELB access
+    Get the next minutes e.g 5 or 10 or 15 that the S3 will emit ELB access
     log. It can also get the time of next nth log base on current time
 
     :return:
@@ -310,13 +310,13 @@ def get_next_nth_elb_log_time(n, last_expected_time):
     #                                                  str('%02d' % hour),
     #                                                  str('%02d' % minute)]))
 
-    # Calculate the next expected log file omitted by S3.
-    # With 5 minute logging interval, logs are omitted every 5 minutes
+    # Calculate the next expected log file emitted by S3.
+    # With 5 minute logging interval, logs are emitted every 5 minutes
     # at each hour, hence the ceiling of the division of current minute
     # with 5 (minutes) should be the next expected minute at which a new
-    # log will be omitted
+    # log will be emitted
 
-    logging_interval = cfg.get_int('s3', 'log_omitting_time', 60)
+    logging_interval = cfg.get_int('s3', 'log_emitting_time', 60)
 
     if not last_expected_time:
         interval_covered = math.ceil(current_time.minute / logging_interval)
@@ -402,7 +402,7 @@ def get_next_nth_elb_log_time(n, last_expected_time):
 
 def calculate_waiting_time():
     # record the start time to calculate time elapsed
-    start_time = time.time()
+    # start_time = time.time()
     # get expected ELB access logs based on measurement interval
     expected_logs = get_expected_num_logs()
 
@@ -410,22 +410,23 @@ def calculate_waiting_time():
     next_expected_time, max_waiting_time \
         = get_next_nth_elb_log_time(expected_logs, None)
 
-    year, month, day, hour, minute = next_expected_time.year, \
-                                     next_expected_time.month, \
-                                     next_expected_time.day, \
-                                     next_expected_time.hour, \
-                                     next_expected_time.minute
+    # year, month, day, hour, minute = next_expected_time.year, \
+    #                                  next_expected_time.month, \
+    #                                  next_expected_time.day, \
+    #                                  next_expected_time.hour, \
+    #                                  next_expected_time.minute
 
     # day, hour, month, next_expected_logging_minute, year, max_waiting_minutes \
     #     = get_next_nth_elb_log_time(expected_logs, None)
 
-    # from UTC to GMT hour + 1
-    time_str = ''.join([str(year), str(month), str(day), str(hour + 1),
-                        str(int(minute))])
-    date = datetime.strptime("".join(time_str), '%Y%m%d%H%M')
-    date_milli = time.mktime(date.timetuple()) + date.microsecond
-    # calculate waiting time
-    waiting_time = (date_milli - start_time)
+    # # from UTC to GMT hour + 1
+    # time_str = ''.join([str(year), str(month), str(day), str(hour + 1),
+    #                     str(int(minute))])
+    # date = datetime.strptime("".join(time_str), '%Y%m%d%H%M')
+    # date_milli = time.mktime(date.timetuple()) + date.microsecond
+    # # calculate waiting time
+    # waiting_time = (date_milli - start_time)
+    waiting_time = max_waiting_time
     return waiting_time
 
 
@@ -626,7 +627,7 @@ def unquote_v(nv):
 
 def canonical_string(method, path, headers, expires=None):
     """
-    Generates the aws canonical string for the given parameters
+    Generates the S3 canonical string for the given parameters
     """
     interesting_headers = {}
     for key in headers:

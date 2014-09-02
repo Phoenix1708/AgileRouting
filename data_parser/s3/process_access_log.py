@@ -213,7 +213,7 @@ def process_access_log(bucket, elb_region, elb_name):
     logs_obtained = 0
     expected_logs_to_obtain = get_expected_num_logs()
 
-    # maintain the last log omitting minutes that dealt with
+    # maintain the last log emitting minutes that dealt with
     last_expected_time = None
 
     # flag indicating that the process needs to stop before obtaining
@@ -272,7 +272,7 @@ def process_access_log(bucket, elb_region, elb_name):
                 # time_counter = 0
                 # continue
 
-            print_message('Waiting for log to be omitted (polling interval %s '
+            print_message('Waiting for log to be emitted (polling interval %s '
                           'seconds) ...\n' % log_polling_interval)
 
             time.sleep(log_polling_interval)

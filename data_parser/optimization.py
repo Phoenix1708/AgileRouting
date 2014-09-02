@@ -452,6 +452,7 @@ def objective_function(variables, total_requests, data_in_per_reqs,
             total_requests * (data_in_per_reqs[i] + data_out_per_reqs[i]) * \
             elb_prices[i] * variables[i]
 
+        # TODO: now we can apply accurate EC2 pricing calculation
         ec2_cost = 0.120 * total_requests * data_out_per_reqs[i] * variables[i]
 
         service_time = math.pow(service_rates[i], -1)
@@ -508,7 +509,25 @@ def constrains_check(variables, total_requests,
             total_requests * (data_in_per_reqs[i] + data_out_per_reqs[i]) * \
             elb_prices[i] * variables[i]
 
-        ec2_cost = 0.120 * total_requests * variables[i] * data_out_per_reqs[i]
+        # now we can apply accurate EC2 pricing calculation
+        total_data_out = total_requests * variables[i] * data_out_per_reqs[i]
+        ec2_cost = 0
+        if total_data_out < 1:
+            ec2_cost = 0
+        elif 1 < total_data_out <= 10240:
+            ec2_cost = total_data_out * 0.12
+        elif 10240 < total_data_out <= 51200:
+            ec2_cost = (total_data_out - 10240) * 0.09 + 10240 * 0.12
+        elif 51200 < total_data_out <= 153600:
+            ec2_cost = \
+                (total_data_out - 51200) * 0.07 + 40960 * 0.09 + 10240 * 0.12
+        elif 153600 < total_data_out <= 512000:
+            ec2_cost = \
+                (total_data_out - 153600) * 0.05 + 102400 * 0.07 + \
+                40960 * 0.09 + 10240 * 0.12
+
+        # ec2_cost = 0.120 * total_requests * variables[i] *
+        # data_out_per_reqs[i]
 
         cost += elb_cost + ec2_cost
 
@@ -530,7 +549,7 @@ def optimisation(num_of_stations, total_requests, elb_prices,
     feasible_tuple = []
 
     # get all combination that satisfy constrains
-    for i in f_range(1, 99, 0.001):
+    for i in f_range(1, 99, 0.0001):
         variables[0] = float(i) / 100.0
         variables[1] = 1 - float(i) / 100.0
 
