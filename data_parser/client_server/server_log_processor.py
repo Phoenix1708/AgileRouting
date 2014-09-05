@@ -128,16 +128,14 @@ def process_server_logs(base_dir, line_counters, total_users, waiting_time,
         # takes to complete a single request
         max_time = max(service_time_list)
 
-        comp_reg_sum = 0
+        comp_req_sum = 0
         for service_time in service_time_list:
-            comp_reg_sum += max_time / service_time
+            comp_req_sum += max_time / service_time
 
-        overall_service_rate = comp_reg_sum / max_time
+        overall_service_rate = comp_req_sum / max_time
 
         station_metric.service_rate = overall_service_rate
 
     # store result of this thread in result the queue
     queue.put((service_station_metric_list, total_requests))
     queue.put(line_counters)
-
-    # return service_station_metric_list, line_counters

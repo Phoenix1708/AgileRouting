@@ -42,20 +42,12 @@ def parse_monitor_log(input_files_dir, line_counter):
     timestamps = None
     vm_id = None
 
-    # In case the file begin with half of one record, use a flag to
-    # indicate the next 'first line' of one record
-    # e.g.
-    # "f707d0a3-c7a3-4664-b74a-1fc7bcd5d7db	ObserverReceivedTimesampt
-    # 1406112134817"
-    # Then we can start reading data from this line afterwards
-    # need_to_skip_to_the_next = False
-
-    # debug
     file_path = os.path.abspath(original_file_dir + '/' + file_name)
 
-    with open(file_path) as test_f:
-        print_message('File length: %s' % (len(test_f.readlines())))
-        print_message('Line counter %s\n' % line_counter)
+    # debug
+    # with open(file_path) as test_f:
+    #     print_message('File length: %s' % (len(test_f.readlines())))
+    #     print_message('Line counter %s\n' % line_counter)
 
     # counter for number of skip due to incorrect format of some
     # csparql log entries
@@ -141,6 +133,10 @@ def parse_monitor_log(input_files_dir, line_counter):
             # we don't check for metric ID, since it could be a new metric
             if metric_prop != expected_properties[expected_prop_idx] or \
                (expected_prop_idx != 0 and metric_id != last_metric_id):
+
+                # as long as it enters here it is one skip already
+                skip_counter += 1
+
                 # if an 'isAbout' encountered we assume the following
                 # lines could possible be in order
                 if metric_prop == 'isAbout':
@@ -151,7 +147,6 @@ def parse_monitor_log(input_files_dir, line_counter):
                     # Skip to the next 'isAbout' line
                     expected_prop_idx = 0  # expecting the 'isAbout'
                     last_metric_id = None
-                    skip_counter += 1
                     continue
 
             # if the metric property is expected then expect the next one
@@ -222,66 +217,10 @@ def calculate_metrics(data_list):
     What needs to be calculated:
     1. The total number of requests
     2. Requests arrival rate of the station (lambda)
-    3. Service Rate of the station (mu)
+    3. Prepares metrics for calculating Service Rate of the station (mu)
 
     :param data_list:   list of data for each server in current service station
-    :param total_users: Total number of users served by this station
-    :return:            tuple of metric (total_request, lambda, mu)
     """
-    # total_requests = 0
-    # overall_service_rate = 0
-    #
-    # for data in data_list:
-    # for i in xrange(len(data[2])):
-    # total_requests += len(data[2][i])
-
-    # calculate overall arrival rates
-    # the length of data[0][0] is the number of sampling time
-
-    # avg_arrival_rate = []  # list that stores the average arrival rate
-    # # of each server
-    # for data in data_list:
-    # arrival_rates_list = []  # list that stores the average arrival
-    # # rate of each sampling interval for
-    #                              # a single server
-    #
-    #     # sum the arrival rate for each request at the same sampling interval
-    #     for i in xrange(len(data[0][0])):
-    #         one_sampling_interval = 0
-    #         for j in xrange(len(data[2]) - 1):
-    #             one_sampling_interval += data[7][j][i]
-    #
-    #         # store overall arrival rate of each sampling interval
-    #         # in order to estimate service rate with CPU utilisation
-    #         # which is also collected during each sampling interval
-    #         arrival_rates_list.append(one_sampling_interval)
-    #
-    #     # estimate service rate regression
-    #     cpu_utils = data[1][len(data[1])-1]
-    #
-    #     print_message('Arrival rates: %s' % arrival_rates_list)
-    #     print_message('CPU utils: %s' % cpu_utils)
-    #
-    #     # FIXME: hard to estimate when the amount of data is small
-    #
-    #     slope, intercept, r_value, p_value, std_err = \
-    #         stats.linregress(arrival_rates_list, cpu_utils)
-    #
-    #     service_rate = math.pow(slope, -1)
-    #     print_message('Service_rate: %s' % service_rate)
-    #
-    #     # collect average arrival rate of each sever
-    #     # for overall arrival rate calculation
-    #     avg_arrival_rate.append(numpy.mean(arrival_rates_list))
-    #
-    #     # The overall service rate of the service station is the
-    #     # sum of server rate of each server, since both servers are
-    #     # serving requests simultaneously
-    #     overall_service_rate += service_rate
-    #
-    # # For the similar reason, the arrival rate is the sum of arrival rate of
-    # # all servers in the service station.
-    # arrival_rate = sum(avg_arrival_rate)
 
     # "vm, number of requests, cpu_core, data" dict list
     service_rate_para_list = []
@@ -322,12 +261,12 @@ def calculate_metrics(data_list):
         cpu_core = [vm_cpu_spec[spec] for spec in vm_cpu_spec.keys()
                     if spec in vm_name]
 
-        # cpu_core = cfg.get('VMSpec', vm_name)
         if not cpu_core:
             print 'No specification configured for VM \'%s\'' % vm_name
             return
 
-        print_message('Number of CPUs of \'%s\': %s' % (vm_name, cpu_core))
+        print_message('[Debug] Number of CPUs of \'%s\': %s'
+                      % (vm_name, cpu_core))
 
         para_tuple.update({'cpu_cores': cpu_core})
 
@@ -339,7 +278,6 @@ def calculate_metrics(data_list):
     station_arrival_rate = sum(avg_server_arrival_rate)
 
     return total_requests, station_arrival_rate, service_rate_para_list
-    # , overall_service_rate
 
 
 def process_monitor_log(base_dir, observer_addr, line_counter, queue):
@@ -406,11 +344,3 @@ def process_monitor_log(base_dir, observer_addr, line_counter, queue):
                    'line_counter': line_counter}
 
     queue.put(result_dict)
-
-
-    # if __name__ == '__main__':
-    # parse_monitor_log('logs/2014_0817_1556', 0)
-    # # for i in xrange(len(sys.argv)):
-    # # print sys.argv[i]
-    # # process_monitor_log(sys.argv[1], 0)
-    #     print 'done'

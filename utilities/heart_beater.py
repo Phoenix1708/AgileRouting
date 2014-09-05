@@ -13,6 +13,10 @@ resources_location = os.path.dirname(Resources.__file__)
 
 def measure_round_trip_delay(from_host, to_host, from_host_pk,
                              measurement_interval, queue):
+
+    from_host_ip, from_host_name = from_host
+    to_host_ip, to_host_name = to_host
+
     start_time = time.time()
     current_time = start_time
     time_elapsed = current_time - start_time
@@ -21,14 +25,12 @@ def measure_round_trip_delay(from_host, to_host, from_host_pk,
 
     while time_elapsed < measurement_interval:   # in the unit of seconds
 
-        cmd = ' '.join(["ping", "-c 5", to_host])
-        out, err = execute_remote_command(from_host, cmd, 'ubuntu', '',
+        cmd = ' '.join(["ping", "-c 5", to_host_ip])
+        out, err = execute_remote_command(from_host_ip, cmd, 'ubuntu', '',
                                           from_host_pk)
 
         rt_str = [text for text in out.split('\n')
                   if 'min/avg/max/' in text]
-
-        # print rt_str
 
         stat_str = rt_str[0].split('=')
         metric_name = stat_str[0]
@@ -36,11 +38,11 @@ def measure_round_trip_delay(from_host, to_host, from_host_pk,
         avg_idx = metric_name.split('/').index('avg')
 
         avg_round_trip_delay = values[avg_idx]
-        print_message('Average round trip delay between %s and %s: %s'
+        print_message('Average round trip delay between %s and %s: %s (ms)'
                       % (from_host, to_host, avg_round_trip_delay))
 
         # record current measurement
-        measurements.append(float(avg_round_trip_delay))
+        measurements.append(float(avg_round_trip_delay) / 1000)
 
         time.sleep(30)  # sleep for half a min
 
@@ -49,9 +51,7 @@ def measure_round_trip_delay(from_host, to_host, from_host_pk,
 
     average_round_trip_delay = numpy.mean(measurements)
 
-    queue.put('%s,%s,%s' % (from_host, to_host, average_round_trip_delay))
-
-    # return avg_round_trip_delay
+    queue.put((from_host, to_host, average_round_trip_delay))
 
 
 def _measure_latency(src_hosts, dst_hosts, measurement_interval):
@@ -81,6 +81,7 @@ def _measure_latency(src_hosts, dst_hosts, measurement_interval):
         for d_hosts_ip, d_hosts_name in dst_hosts.iteritems():
 
             s_host_ip, s_host_name = s_host
+            d_host = d_hosts_ip, d_hosts_name
 
             # <ip: host_name>
             ip_f_host_dict.update({s_host_ip: s_host_name})
@@ -88,17 +89,16 @@ def _measure_latency(src_hosts, dst_hosts, measurement_interval):
             delay_manager.start_task(
                 target_func=measure_round_trip_delay,
                 name="delay_measurer",
-                para=[s_host_ip, d_hosts_ip, s_host_pk, measurement_interval]
+                para=[s_host, d_host, s_host_pk, measurement_interval]
             )
 
     delay_results = delay_manager.collect_results()
     while not delay_results.empty():
         # get metrics returned
-        from_host, to_host, average_round_trip_delay \
-            = delay_results.get().split(',')
+        from_host, to_host, average_round_trip_delay = delay_results.get()
 
-        src_host_name = ip_f_host_dict[from_host]
-        to_host_name = dst_hosts[to_host]
+        src_host_name = ip_f_host_dict[from_host[0]]
+        to_host_name = dst_hosts[to_host[0]]
 
         measurement_key = '%s,%s' % (src_host_name, to_host_name)
 
@@ -128,19 +128,3 @@ def measure_latency(available_clients, available_stations, m_interval, queue):
 
     result_dict = _measure_latency(src_host, to_host, m_interval)
     queue.put(result_dict)
-
-    # return result_dict
-
-
-# if __name__ == '__main__':
-#
-#     ip_host_name = ('54.255.65.145', 'ap_south_1_client_1')
-#     module_path = os.path.dirname(Resources.__file__)
-#     private_key_file_path = module_path + '/xueshisingapore.pem'
-#
-#     src_host = {ip_host_name: private_key_file_path}
-#     to_host = {'176.34.66.152': 'xueshi-station-1'}
-#     m_interval = 60
-#
-#     result_dict = _measure_latency(src_host, to_host, m_interval)
-#     print result_dict

@@ -1,16 +1,11 @@
 from models.resource_record import Record
-from models.resultset import ResultSet
 from models.xml_classes.change_resource_record_sets_request import \
     ChangeResourceRecordSetsRequest, Change, ChangeBatch, Changes
 
 
-class ResourceRecordSets(ResultSet):
+class ResourceRecordSets(object):
     """
-    A list of resource records.
-
-    :ivar hosted_zone_id: The ID of the hosted zone.
-    :ivar comment: A comment that will be stored with the change.
-    :ivar changes: A list of changes.
+    Represent Route53 Resource Record Sets
     """
 
     xml_namespace = 'https://route53.amazonaws.com/doc/2013-04-01/'
@@ -22,8 +17,6 @@ class ResourceRecordSets(ResultSet):
         self.changes = []
         self.next_record_name = None
         self.next_record_type = None
-        super(ResourceRecordSets, self).__init__(
-            [('ResourceRecordSet', Record)])
 
     def __repr__(self):
         if self.changes:
@@ -37,56 +30,29 @@ class ResourceRecordSets(ResultSet):
                    alias_hosted_zone_id=None, alias_dns_name=None,
                    identifier=None,
                    weight=None, region=None, alias_evaluate_target_health=None,
-                   health_check=None, failover=None):
+                   health_check=None):
         """
-        Add a change request to the set.
+        store record set changes together and commit together.
 
-        :type action: str
-        :param action: The action to perform ('CREATE'|'DELETE'|'UPSERT')
+        :param action: Change action ('CREATE', 'DELETE', 'UPSERT')
 
-        :type name: str
-        :param name: The name of the domain you want to perform the action on.
+        :param name: The domain name whose record that will be changed
 
-        :type record_type: str
-        :param record_type: The DNS record type. e.g A, AAAA, CNAME etc.
+        :param record_type: The record type
 
-        :type ttl: int
-        :param ttl: The resource record cache time to live (TTL), in seconds.
+        :param ttl: The record Time To Live (TTL) value
 
-        :type alias_hosted_zone_id: str
-        :param alias_dns_name: *Alias resource record sets only* The value
-            of the hosted zone ID, CanonicalHostedZoneNameId, for
-            the LoadBalancer.
+        :param alias_dns_name: dns name of the alias target
 
-        :type alias_dns_name: str
-        :param alias_hosted_zone_id: *Alias resource record sets only*
-            Information about the domain to which you are redirecting traffic.
+        :param alias_hosted_zone_id: hosted zone id of the alias target
 
-        :type identifier: str
-        :param identifier: *Weighted and latency-based resource record sets
-            only* An identifier that differentiates among multiple resource
-            record sets that have the same combination of DNS name and type.
+        :param identifier: identifier of Weighted and latency based record
 
-        :type weight: int
-        :param weight: *Weighted resource record sets only* Among resource
-            record sets that have the same combination of DNS name and type,
-            a value that determines what portion of traffic for the current
-            resource record set is routed to the associated location
+        :param weight: Weighted resource record sets weight
 
-        :type region: str
-        :param region: *Latency-based resource record sets only* Among resource
-            record sets that have the same combination of DNS name and type,
-            a value that determines which region this should be associated with
-            for the latency-based routing
+        :param region: Latency based resource record sets region
 
-        :type alias_evaluate_target_health: Boolean
-        :param alias_evaluate_target_health: *Required for alias resource record
-            sets* Indicates whether this Resource Record Set should respect
-            the health status of any health checks associated with the ALIAS
-            target record which it is linked to.
-
-        :type health_check: str
-        :param health_check: Health check to associate with this record
+        :param alias_evaluate_target_health: whether to do health check.
 
         """
         change = Record(
@@ -95,14 +61,9 @@ class ResourceRecordSets(ResultSet):
             alias_dns_name=alias_dns_name, identifier=identifier,
             weight=weight, region=region,
             alias_evaluate_target_health=alias_evaluate_target_health,
-            health_check=health_check, failover=failover)
+            health_check=health_check)
         self.changes.append([action, change])
         return change
-
-    def add_change_record(self, action, change):
-        """Add an existing record to a change set with the specified action"""
-        self.changes.append([action, change])
-        return
 
     def to_xml(self):
         """Building the XML serialization class, which will then be
@@ -126,33 +87,6 @@ class ResourceRecordSets(ResultSet):
         return change_request.toXml(prettyPrint=False)
 
     def commit(self):
-        """Commit this change"""
-
-        return self.connection.change_rrsets(self.hosted_zone_id, self.to_xml())
-
-    def endElement(self, name, value, connection):
-        """Overwritten to also add the NextRecordName and
-        NextRecordType to the base object"""
-        if name == 'NextRecordName':
-            self.next_record_name = value
-        elif name == 'NextRecordType':
-            self.next_record_type = value
-        else:
-            return super(ResourceRecordSets, self).endElement(name, value,
-                                                              connection)
-
-    def __iter__(self):
-        """Override the next function to support paging"""
-        results = super(ResourceRecordSets, self).__iter__()
-        truncated = self.is_truncated
-        while results:
-            for obj in results:
-                yield obj
-            if self.is_truncated:
-                self.is_truncated = False
-                results = self.connection.get_all_rrsets(
-                    self.hosted_zone_id, name=self.next_record_name,
-                    type=self.next_record_type)
-            else:
-                results = None
-                self.is_truncated = truncated
+        """ Commit current change to Route 53"""
+        return self.connection.change_resource_record_sets(self.hosted_zone_id,
+                                                           self.to_xml())

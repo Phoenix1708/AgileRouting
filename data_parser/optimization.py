@@ -19,115 +19,9 @@ def f_range(start, stop, step):
         r += float(step)
 
 
-def calculate_cost_coef(total_requests, avg_data_in, avg_data_out, elb_price,
-                        prices_ranges, cost_mode):
-    cost_coef = 0
-    data_out = total_requests * avg_data_out
-
-    # in order for each cost calculation method to be valid we need to
-    # add constrain that specify the amount of data for each method and
-    # eventually pick the one that is solvable and the result is the largest
-
-    data_constrain_coef = 0
-
-    # x <= 1 GB
-    if cost_mode == 0:
-        cost_coef = total_requests * (avg_data_in + avg_data_out) * elb_price \
-                    + data_out * prices_ranges['First_1_GB']
-
-    # 1GB < x <= 10240 GB
-    elif cost_mode == 1:
-        cost_coef = total_requests * (avg_data_in + avg_data_out) * elb_price \
-                    + data_out * prices_ranges['UP_to_10_TB']
-
-    # 10240 GB < x <= 51200 GB
-    elif cost_mode == 2:
-        cost_coef = total_requests * (avg_data_in + avg_data_out) * elb_price \
-                    + (data_out - 10240) * prices_ranges['Next_40_TB'] \
-                    + 10240 * prices_ranges['UP_to_10_TB']
-
-    # 52100 < x <= 153600 GB
-    elif cost_mode == 3:
-        cost_coef = total_requests * (avg_data_in + avg_data_out) * elb_price \
-                    + (data_out - 51200) * prices_ranges['Next_100_TB'] \
-                    + 40960 * prices_ranges['Next_40_TB'] \
-                    + 10240 * prices_ranges['UP_to_10_TB']
-
-    # 153600 GB < x <= 512000 GB
-    elif cost_mode == 4:
-        cost_coef = total_requests * (avg_data_in + avg_data_out) * elb_price \
-                    + (data_out - 153600) * prices_ranges['Next_350_TB'] \
-                    + 102400 * prices_ranges['Next_100_TB'] \
-                    + 40960 * prices_ranges['Next_40_TB'] \
-                    + 10240 * prices_ranges['UP_to_10_TB']
-
-    return cost_coef
-
-
-# def add_data_constrain(coefficients_for_p_i, amount_data, cost_mode,
-# num_of_stations, idx):
-#
-# # | #data  0    0    0   ... | < 1 GB
-#
-# # | #data  0    0    0   ... | > 1 GB
-# # | #data  0    0    0   ... | < 10240 GB
-#
-# # |   0  #data  0    0   ... | > 1 GB
-# # |   0  #data  0    0   ... | < 10240 GB
-# # ......
-#
-# # | #data  0    0    0   ... | > 10240 GB
-# # | #data  0    0    0   ... | < 51200 GB
-# # ......
-#
-# # | #data  0    0    0   ... | > 52100 GB
-# # | #data  0    0    0   ... | < 153600 GB
-# # ......
-#
-#     # | #data  0    0    0   ... | > 153600 GB
-#     # | #data  0    0    0   ... | < 512000 GB
-#
-#     data_amount_coef = [0 for i in xrange(num_of_stations)]
-#
-#     # x <= 1 GB
-#     if cost_mode == 0:
-#         data_amount_coef[idx] = amount_data
-#         """ Order Matters (same applied to all other mode)
-#             Add coefficient for '>' first
-#         """
-#         coefficients_for_p_i.extend(data_amount_coef * -1)
-#         coefficients_for_p_i.extend(data_amount_coef)
-#
-#     # 1GB < x <= 10240 GB
-#     elif cost_mode == 1:
-#         cost_coef = total_requests * (avg_data_in + avg_data_out) * elb_price \
-#                     + data_out * prices_ranges['UP_to_10_TB']
-#
-#     # 10240 GB < x <= 51200 GB
-#     elif cost_mode == 2:
-#         cost_coef = total_requests * (avg_data_in + avg_data_out) * elb_price \
-#                     + (data_out - 10240) * prices_ranges['Next_40_TB'] \
-#                     + 10240 * prices_ranges['UP_to_10_TB']
-#
-#     # 52100 < x <= 153600 GB
-#     elif cost_mode == 3:
-#         cost_coef = total_requests * (avg_data_in + avg_data_out) * elb_price \
-#                     + (data_out - 51200) * prices_ranges['Next_100_TB'] \
-#                     + 40960 * prices_ranges['Next_40_TB'] \
-#                     + 10240 * prices_ranges['UP_to_10_TB']
-#
-#     # 153600 GB < x <= 512000 GB
-#     elif cost_mode == 4:
-#         cost_coef = total_requests * (avg_data_in + avg_data_out) * elb_price \
-#                     + (data_out - 153600) * prices_ranges['Next_350_TB'] \
-#                     + 102400 * prices_ranges['Next_100_TB'] \
-#                     + 40960 * prices_ranges['Next_40_TB'] \
-#                     + 10240 * prices_ranges['UP_to_10_TB']
-
-
 def optimise(num_of_stations, total_requests, elb_prices,
              avg_data_in_per_reqs, avg_data_out_per_reqs,
-             in_bandwidths, out_bandwidths, budget,
+             in_bandwidths, out_bandwidths, budget, sla_response_t,
              service_rates, measurement_interval, station_latency, k,
              ec2_prices_ranges=None, cost_mode=None):
     """
@@ -328,10 +222,9 @@ def optimise(num_of_stations, total_requests, elb_prices,
             total_requests * avg_data_out_per_reqs[i] / measurement_interval
 
         # """ Response time constrain """
-        # response_t_coef = [0 for i3 in xrange(num_of_stations)]
-        # response_t_coef[i] = \
-        #     sla_response_t[i] * math.pow(service_rates[i], -1)
-        #       * total_requests
+        response_t_coef = [0 for i3 in xrange(num_of_stations)]
+        response_t_coef[i] = \
+            sla_response_t[i] * math.pow(service_rates[i], -1) * total_requests
 
         """ All variable (weights) are positive """
         all_pos_coef = [0 for i4 in xrange(num_of_stations)]
@@ -341,16 +234,6 @@ def optimise(num_of_stations, total_requests, elb_prices,
         sum_p_coef = 1
 
         """ Cost less then or equal to budget """
-        # EC2_cost = 0.9312 * total_data_out * P + 196.6
-        # (for data less than 40TB)
-        # cost_coef = \
-        #     total_requests * (avg_data_in_per_reqs[i] +
-        #                       avg_data_out_per_reqs[i]) * elb_prices[i] + \
-        #     0.9312 * total_requests * avg_data_out_per_reqs[i]
-        #
-        # #### test ####
-        # print_message('Total cost : %s $' % (cost_coef + 192.6))
-        # #### test ####
 
         cost_coef = \
             total_requests * (avg_data_in_per_reqs[i] +
@@ -366,7 +249,7 @@ def optimise(num_of_stations, total_requests, elb_prices,
         coefficients_for_p_i = []
         coefficients_for_p_i.extend(in_bandwidth_coef)
         coefficients_for_p_i.extend(out_bandwidth_coef)
-        # coefficients_for_p_i.extend(response_t_coef)
+        coefficients_for_p_i.extend(response_t_coef)
         coefficients_for_p_i.extend(all_pos_coef)
         # in order to turn the "sum of weights is 1" equability constrain to
         # inequality constrain, replace the original equality constrain with
@@ -377,24 +260,6 @@ def optimise(num_of_stations, total_requests, elb_prices,
         coefficients_for_p_i.append(sum_p_coef * -1)
         coefficients_for_p_i.append(sum_p_coef)
         coefficients_for_p_i.append(cost_coef)
-
-        # """ Cost less then or equal to budget """
-        # # Cost needs to be calculated differently
-        # cost_coef = calcualte_cost_coef(total_requests,
-        #                                 avg_data_in_per_reqs[i],
-        #                                 avg_data_out_per_reqs[i],
-        #                                 elb_prices[i], ec2_prices_ranges[i],
-        #                                 cost_mode)
-        # #### test ####
-        # print_message('Total cost in mode %s : %s' % (cost_mode, cost_coef))
-        # #### test ####
-        #
-        # # coefficient for total cost less than budget
-        # coefficients_for_p_i.append(cost_coef)
-        #
-        # # constrain of the amount of data sent
-        # total_requests * avg_data_out_per_reqs[i]
-        # coefficients_for_p_i.append()
 
         # add this list in the coefficient collection as the coefficient of
         # current variable i.e weight
@@ -418,11 +283,11 @@ def optimise(num_of_stations, total_requests, elb_prices,
     # e.g in_bandwidths -> out_bandwidths -> Response time constrains -> ...
     right_hand_side.extend([in_bandwidths[n] for n in xrange(num_of_stations)])
     right_hand_side.extend([out_bandwidths[m] for m in xrange(num_of_stations)])
-    # right_hand_side.extend(
-    #     [measurement_interval *
-    #      (sla_response_t[k] - math.pow(service_rates[k], -1))
-    #      for k in xrange(num_of_stations)]
-    # )
+    right_hand_side.extend(
+        [measurement_interval *
+         (sla_response_t[k] - math.pow(service_rates[k], -1))
+         for k in xrange(num_of_stations)]
+    )
     right_hand_side.extend([0 for j in xrange(num_of_stations)])
     right_hand_side.append(0.0000000001 - 1)
     right_hand_side.append(1 + 0.0000000001)
@@ -438,8 +303,6 @@ def optimise(num_of_stations, total_requests, elb_prices,
 
     sol = solvers.lp(c, a, b)
 
-    # solvers.qp()
-
     return sol['x']
 
 
@@ -452,64 +315,7 @@ def objective_function(variables, total_requests, data_in_per_reqs,
             total_requests * (data_in_per_reqs[i] + data_out_per_reqs[i]) * \
             elb_prices[i] * variables[i]
 
-        # TODO: now we can apply accurate EC2 pricing calculation
-        ec2_cost = 0.120 * total_requests * data_out_per_reqs[i] * variables[i]
-
-        service_time = math.pow(service_rates[i], -1)
-        latency = \
-            service_time / \
-            (1 - service_time * (total_requests * variables[i]) / m_interval) +\
-            station_latency[i]
-
-        # latency = (service_time * m_interval) / \
-        #           (m_interval - service_time * total_requests *
-        #            variables[i]) + station_latency[i]
-
-        result += elb_cost + ec2_cost + latency
-
-    return result
-
-
-def constrains_check(variables, total_requests,
-                     data_in_per_reqs, data_out_per_reqs,
-                     elb_prices, m_interval, budget,
-                     in_bandwidths, out_bandwidths):
-    passes = 0  # passed constrains
-
-    cost = 0
-    for i in xrange(len(variables)):
-        """ In bandwidth constrains """
-
-        in_bandwidth = \
-            total_requests * data_in_per_reqs[i] * variables[i] / m_interval
-
-        if in_bandwidth < in_bandwidths[i]:
-            passes += 1
-
-        """ Out bandwidth constrains """
-        out_bandwidth = \
-            total_requests * data_out_per_reqs[i] * variables[i] / m_interval
-
-        if out_bandwidth < out_bandwidths[i]:
-            passes += 1
-
-        """ Cost less then or equal to budget """
-        # EC2_cost = 0.9312 * total_data_out * P + 196.6
-        # (for data less than 40TB)
-        # cost_coef = \
-        #     total_requests * (avg_data_in_per_reqs[i] +
-        #                       avg_data_out_per_reqs[i]) * elb_prices[i] + \
-        #     0.9312 * total_requests * avg_data_out_per_reqs[i]
-        #
-        # #### test ####
-        # print_message('Total cost : %s $' % (cost_coef + 192.6))
-        # #### test ####
-
-        elb_cost = \
-            total_requests * (data_in_per_reqs[i] + data_out_per_reqs[i]) * \
-            elb_prices[i] * variables[i]
-
-        # now we can apply accurate EC2 pricing calculation
+        # we can apply accurate EC2 pricing calculation
         total_data_out = total_requests * variables[i] * data_out_per_reqs[i]
         ec2_cost = 0
         if total_data_out < 1:
@@ -526,15 +332,81 @@ def constrains_check(variables, total_requests,
                 (total_data_out - 153600) * 0.05 + 102400 * 0.07 + \
                 40960 * 0.09 + 10240 * 0.12
 
-        # ec2_cost = 0.120 * total_requests * variables[i] *
-        # data_out_per_reqs[i]
+        service_time = math.pow(service_rates[i], -1)
+        total_latency = \
+            service_time / \
+            (1 - service_time * (total_requests * variables[i]) / m_interval) +\
+            station_latency[i]
+
+        result += elb_cost + ec2_cost + total_latency
+
+        # Test
+        # result += latency
+
+    return result
+
+
+def constrains_check(variables, total_requests,
+                     data_in_per_reqs, data_out_per_reqs,
+                     elb_prices, m_interval, budget,
+                     in_bandwidths, out_bandwidths,service_rates,
+                     station_latency):
+    passes = 0  # passed constrains
+
+    cost = 0
+    for i in xrange(len(variables)):
+        """ In bandwidth constrains """
+        in_bandwidth = \
+            total_requests * data_in_per_reqs[i] * variables[i] / m_interval
+
+        if in_bandwidth < in_bandwidths[i]:
+            passes += 1
+
+        """ Out bandwidth constrains """
+        out_bandwidth = \
+            total_requests * data_out_per_reqs[i] * variables[i] / m_interval
+
+        if out_bandwidth < out_bandwidths[i]:
+            passes += 1
+
+        """ Cost less then or equal to budget """
+        elb_cost = \
+            total_requests * (data_in_per_reqs[i] + data_out_per_reqs[i]) * \
+            elb_prices[i] * variables[i]
+
+        """"latency non-negative"""
+        service_time = math.pow(service_rates[i], -1)
+        latency = \
+            service_time / \
+            (1 - service_time * (total_requests * variables[i]) / m_interval) +\
+            station_latency[i]
+
+        if latency > 0:
+            passes += 1
+
+        # we can apply accurate EC2 pricing calculation
+        total_data_out = total_requests * variables[i] * data_out_per_reqs[i]
+        ec2_cost = 0
+        if total_data_out < 1:
+            ec2_cost = 0
+        elif 1 < total_data_out <= 10240:
+            ec2_cost = total_data_out * 0.12
+        elif 10240 < total_data_out <= 51200:
+            ec2_cost = (total_data_out - 10240) * 0.09 + 10240 * 0.12
+        elif 51200 < total_data_out <= 153600:
+            ec2_cost = \
+                (total_data_out - 51200) * 0.07 + 40960 * 0.09 + 10240 * 0.12
+        elif 153600 < total_data_out <= 512000:
+            ec2_cost = \
+                (total_data_out - 153600) * 0.05 + 102400 * 0.07 + \
+                40960 * 0.09 + 10240 * 0.12
 
         cost += elb_cost + ec2_cost
 
     if cost < budget:
         passes += 1
 
-    if passes == len(variables) * 2 + 1:
+    if passes == len(variables) * 3 + 1:
         return True
 
     return False
@@ -558,9 +430,14 @@ def optimisation(num_of_stations, total_requests, elb_prices,
                                               avg_data_out_per_reqs,
                                               elb_prices, measurement_interval,
                                               budget,
-                                              in_bandwidths, out_bandwidths)
+                                              in_bandwidths, out_bandwidths,
+                                              service_rates, station_latency)
         if satisfy_constrains:
             feasible_tuple.append((variables[0], variables[1]))
+
+    if len(feasible_tuple) == 0:
+        print_message('No feasible solution found')
+        return
 
     smallest = float("inf")
     answer = (1, 1)
@@ -584,98 +461,27 @@ def optimisation(num_of_stations, total_requests, elb_prices,
                               avg_data_out_per_reqs[i]) * \
             elb_prices[i] * answer[i]
 
-        ec2_cost = 0.120 * total_requests * avg_data_out_per_reqs[i] * answer[i]
-
-        service_time = math.pow(service_rates[i], -1)
+        total_data_out = total_requests * answer[i] * \
+                         avg_data_out_per_reqs[i]
+        ec2_cost = 0
+        if total_data_out < 1:
+            ec2_cost = 0
+        elif 1 < total_data_out <= 10240:
+            ec2_cost = total_data_out * 0.12
+        elif 10240 < total_data_out <= 51200:
+            ec2_cost = (total_data_out - 10240) * 0.09 + 10240 * 0.12
+        elif 51200 < total_data_out <= 153600:
+            ec2_cost = \
+                (total_data_out - 51200) * 0.07 + 40960 * 0.09 + 10240 * 0.12
+        elif 153600 < total_data_out <= 512000:
+            ec2_cost = \
+                (total_data_out - 153600) * 0.05 + 102400 * 0.07 + \
+                40960 * 0.09 + 10240 * 0.12
 
         total_cost += elb_cost + ec2_cost
-
-        latency = \
-            service_time / \
-            (1 - service_time * (total_requests * variables[i]) /
-             measurement_interval) + station_latency[i]
-
-        # latency = (service_time * measurement_interval) / \
-        #           (measurement_interval - service_time * total_requests *
-        #            answer[i]) + station_latency[i]
-
-        print_message('')
-        print_message('Expected latency : %s' % latency)
 
     print_message('')
     print_message('Total cost: $%s ' % total_cost)
     # #### test ####
 
     return answer
-
-
-    # if __name__ == '__main__':
-    #     for i in f_range(1, 99, 0.1):
-    #         print i
-    #         print float(i) / 100.0
-    #         print 1 - float(i) / 100.0
-
-    # for i in xrange(1, 100):
-    #     print float(i) / 100
-    #     print 1 - float(i) / 100
-    #     print float("inf")
-
-    #     A = matrix([[-1.0, -1.0, 0.0, 1.0], [1.0, -1.0, -1.0, -2.0]])
-    #     b = matrix([1.0, -2.0, 0.0, 4.0])
-    #     c = matrix([2.0, 1.0])
-    #     sol = solvers.lp(c, A, b)
-    #
-    #     print(sol['x'])
-    #     test = [sol['x'][i] for i in xrange(2)]
-    #     print test
-    #     print sol['x'][0]
-    #     print sol['x'][1]
-    #     print sol['x'][2]
-
-    # coefficients = [[
-    #      0,
-    #      1.5316553365099901e-07,
-    #      0,
-    #      0.001320873620062156,
-    #      0,
-    #      871.7494370007444,
-    #      0,
-    #      -1,
-    #      -1,
-    #      1,
-    #      0.0757350879782905],
-    #
-    #      [0, 1.5316553365099901e-07, 0, 0.001320873620062156, 0,
-    #       871.7494370007444, 0, -1, -1, 1, 0.0757350879782905]]
-    #
-    # right_hand_side = [
-    #     0.04541015625,
-    #     0.04748535156,
-    #     0.04541015625,
-    #     0.04748535156,
-    #     550.6225874560688,
-    #     560.8050746057617,
-    #     0,
-    #     0,
-    #     -0.9999999999,
-    #     1.0000000001,
-    #     1000000]
-    #
-    # obj_func_coef = [23429.924264912024, 23429.924264912024]
-    #
-    # a = matrix(coefficients)
-    # b = matrix(right_hand_side)
-    # c = matrix(obj_func_coef)
-    #
-    # sol = solvers.lp(c, a, b)
-    #
-    # print sol['x']
-
-    # test = optimise(2, 1000, [0.008, 0.010], [29, 50], [100, 200], [50, 100],
-    #                 [0.5, 0.6], 4 / 5)
-    #
-    # test2 = optimise(2, 1000, [0.008, 0.008], [29, 29], [100, 100],
-    #                  [5000, 5000], [0.5, 0.5], 4 / 5)
-
-    # print test
-    # print test2

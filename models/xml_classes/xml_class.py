@@ -21,19 +21,3 @@ class XMLClass(XMLObject):
             return True
 
         return False
-
-
-# class ChangeResourceRecordSetsRequest(XMLClass):
-# #xmlns = StringAttribute()
-#     #change_batch = ItemNode(u'ChangeBatch')
-#
-#     def __init__(self):
-#         super(ChangeResourceRecordSetsRequest, self).__init__()
-#
-#
-# class ChangeResourceRecordSetsResponse(XMLClass):
-#     # class_name = 'ChangeResourceRecordSetsResponse'
-#     # changeInfo = ItemNode(u'ChangeInfo')
-#
-#     def __init__(self):
-#         super(ChangeResourceRecordSetsResponse, self).__init__()

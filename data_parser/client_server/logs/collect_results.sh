@@ -13,5 +13,4 @@ echo "Results directory: " $DIR_NAME
 # path is relative to current working directory
 # python ../monitor_log_parser.py $DIR_NAME
 
-python
 echo "Parsing results in directory: " $DIR_NAME

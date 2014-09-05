@@ -1,48 +1,18 @@
 from __future__ import division
-import base64
-import hashlib
 import logging
 import os
-import re
 import threading
 import time
 import urllib
-import urllib2
 import math
 
 from datetime import datetime, timedelta
 import paramiko
-from etc.configuration import log, cfg
+
+from etc.configuration import cfg
 from utilities.exception import GeneralError
-from utilities.request_headers import HEADER_PREFIX_KEY, DATE_HEADER_KEY, \
-    HeaderInfoMap, METADATA_PREFIX_KEY
-
-
-time_format = '%Y-%m-%dT%H:%M:%SZ'
-
-# List of Query String Arguments of Interest
-qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
-                   'partNumber', 'policy', 'requestPayment', 'torrent',
-                   'versioning', 'versionId', 'versions', 'website',
-                   'uploads', 'uploadId', 'response-content-type',
-                   'response-content-language', 'response-expires',
-                   'response-cache-control', 'response-content-disposition',
-                   'response-content-encoding', 'delete', 'lifecycle',
-                   'tagging', 'restore',
-                   # storageClass is a QSA for buckets in Google Cloud Storage.
-                   # (StorageClass is associated to individual keys in S3, but
-                   # having it listed here should cause no problems because
-                   # GET bucket?storageClass is not part of the S3 API.)
-                   'storageClass',
-                   # websiteConfig is a QSA for buckets in Google Cloud
-                   # Storage.
-                   'websiteConfig',
-                   # compose is a QSA for objects in Google Cloud Storage.
-                   'compose']
-
-_first_cap_regex = re.compile('(.)([A-Z][a-z]+)')
-_number_cap_regex = re.compile('([a-z])([0-9]+)')
-_end_cap_regex = re.compile('([a-z0-9])([A-Z])')
+from utilities.request_headers import HEADER_PREFIX_KEY, \
+    HeaderInfoMap
 
 
 def get_env(env_var_name):
@@ -59,32 +29,6 @@ def get_env(env_var_name):
                                "set it up first " % env_var_name)
 
     return env_var
-
-
-# def get_ip(host_name):
-# ip = cfg.get('IPs', host_name, None)
-# if not ip:
-# raise GeneralError(msg="No IP configuration
-# found for host name \'%s\'."
-# % host_name)
-# return ip
-#
-#
-# def get_elb_bucket(station_name):
-# elb_bucket = cfg.get('ELBBucket', station_name, None)
-# if not elb_bucket:
-# raise GeneralError(msg="No access log location (S3 buckets) "
-# "configuration found for station "
-# "\'%s\'." % station_name)
-#     return elb_bucket
-
-
-# def get_config_value(section, entry_key):
-#     cfg_value = cfg.get(section, entry_key, None)
-#     if not cfg_value:
-#         raise GeneralError(msg="No %s configuration found for "
-#                                "\'%s\' " % (section, entry_key))
-#     return cfg_value
 
 
 def get_available_stations():
@@ -128,16 +72,6 @@ def get_stations_bandwidth(client):
                 if avail_station in client_station_pair:
                     available_station_out_band_map.update(
                         {avail_station: out_band_val})
-
-    # for avail_station in available_stations:
-    #
-    #     if station_in_band_map[avail_station]:
-    #         available_station_in_band_map.update(
-    #             {avail_station: station_in_band_map[avail_station]})
-    #
-    #     if station_out_band_map[avail_station]:
-    #         available_station_out_band_map.update(
-    #             {avail_station: station_out_band_map[avail_station]})
 
     return available_station_in_band_map, available_station_out_band_map
 
@@ -473,23 +407,24 @@ def execute_remote_command(host_address, command, username, password='',
     return [output_str, error_str]
 
 
-def pythonize_name(name):
-    """Convert camel case to a "pythonic" name.
-
-    Examples::
-
-        pythonize_name('CamelCase') -> 'camel_case'
-        pythonize_name('already_pythonized') -> 'already_pythonized'
-        pythonize_name('HTTPRequest') -> 'http_request'
-        pythonize_name('HTTPStatus200Ok') -> 'http_status_200_ok'
-        pythonize_name('UPPER') -> 'upper'
-        pythonize_name('') -> ''
-
+def make_qualified(value):
     """
-
-    s1 = _first_cap_regex.sub(r'\1_\2', name)
-    s2 = _number_cap_regex.sub(r'\1_\2', s1)
-    return _end_cap_regex.sub(r'\1_\2', s2).lower()
+    Ensure domain names end with "." character, which makes a domain
+    fully qualified.
+    """
+    if type(value) in [list, tuple, set]:
+        new_list = []
+        for record in value:
+            if record and not record[-1] == '.':
+                new_list.append("%s." % record)
+            else:
+                new_list.append(record)
+        return new_list
+    else:
+        value = value.strip()
+        if value and not value[-1] == '.':
+            value = "%s." % value
+        return value
 
 
 def get_utf8_value(value):
@@ -501,121 +436,9 @@ def get_utf8_value(value):
         return value
 
 
-# def find_class(module_name, class_name=None):
-# if class_name:
-# module_name = "%s.%s" % (module_name, class_name)
-#     modules = module_name.split('.')
-#     c = None
-#
-#     try:
-#         for m in modules[1:]:
-#             if c:
-#                 c = getattr(c, m)
-#             else:
-#                 c = getattr(__import__(".".join(modules[0:-1])), m)
-#         return c
-#     except:
-#         return None
-
-
-def get_aws_metadata(headers):
-    metadata_prefix = HeaderInfoMap[METADATA_PREFIX_KEY]
-    metadata = {}
-    for hkey in headers.keys():
-        if hkey.lower().startswith(metadata_prefix):
-            val = urllib.unquote(headers[hkey])
-            try:
-                metadata[hkey[len(metadata_prefix):]] = unicode(val, 'utf-8')
-            except UnicodeDecodeError:
-                metadata[hkey[len(metadata_prefix):]] = val
-            del headers[hkey]
-    return metadata
-
-
-def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=hashlib):
-    hash_obj = hash_algorithm()
-    spos = fp.tell()
-    if size and size < buf_size:
-        s = fp.read(size)
-    else:
-        s = fp.read(buf_size)
-    while s:
-        hash_obj.update(s)
-        if size:
-            size -= len(s)
-            if size <= 0:
-                break
-        if size and size < buf_size:
-            s = fp.read(size)
-        else:
-            s = fp.read(buf_size)
-    hex_digest = hash_obj.hexdigest()
-    base64_digest = base64.encodestring(hash_obj.digest())
-    if base64_digest[-1] == '\n':
-        base64_digest = base64_digest[0:-1]
-    # data_size based on bytes read.
-    data_size = fp.tell() - spos
-    fp.seek(spos)
-    return hex_digest, base64_digest, data_size
-
-
-def get_ts(ts=None):
-    if not ts:
-        ts = time.gmtime()
-    return time.strftime(time_format, ts)
-
-
 def find_matching_headers(name, headers):
-    """
-    Takes a specific header name and a dict of headers {"name": "value"}.
-    Returns a list of matching header names, case-insensitive.
 
-    """
     return [h for h in headers if h.lower() == name.lower()]
-
-
-def retry_url(url, retry_on_404=True, num_retries=10):
-    """
-    Retry a url.  This is specifically used for accessing the metadata
-    service on an instance.  Since this address should never be proxied
-    (for security reasons), we create a ProxyHandler with a NULL
-    dictionary to override any proxy settings in the environment.
-    """
-    for i in range(0, num_retries):
-        try:
-            proxy_handler = urllib2.ProxyHandler({})
-            opener = urllib2.build_opener(proxy_handler)
-            req = urllib2.Request(url)
-            r = opener.open(req)
-            result = r.read()
-            return result
-        except urllib2.HTTPError, e:
-            # in 2.6 you use getcode(), in 2.5 and earlier you use code
-            if hasattr(e, 'getcode'):
-                code = e.getcode()
-            else:
-                code = e.code
-            if code == 404 and not retry_on_404:
-                return ''
-        except Exception, e:
-            pass
-
-        log.exception('Caught exception reading instance data')
-        # If not on the last iteration of the loop then sleep.
-        if i + 1 != num_retries:
-            time.sleep(min(2 ** i, cfg.get('HTTPConnection',
-                                           'max_retry_delay', 60)))
-        log.error('Unable to read instance data, giving up')
-        return ''
-
-
-def mklist(value):
-    if not isinstance(value, list):
-        if isinstance(value, tuple):
-            value = list(value)
-        else:
-            value = [value]
-    return value
 
 
 def unquote_v(nv):
@@ -625,9 +448,10 @@ def unquote_v(nv):
         return nv[0], urllib.unquote(nv[1])
 
 
-def canonical_string(method, path, headers, expires=None):
+def s3_canonical_string(method, path, headers):
+
     """
-    Generates the S3 canonical string for the given parameters
+    Generates the S3 canonical string for signing request
     """
     interesting_headers = {}
     for key in headers:
@@ -637,20 +461,10 @@ def canonical_string(method, path, headers, expires=None):
                      lk.startswith(HeaderInfoMap[HEADER_PREFIX_KEY])):
             interesting_headers[lk] = str(headers[key]).strip()
 
-    # these keys get empty strings if they don't exist
     if 'content-type' not in interesting_headers:
         interesting_headers['content-type'] = ''
     if 'content-md5' not in interesting_headers:
         interesting_headers['content-md5'] = ''
-
-    # just in case someone used this.  it's not necessary in this lib.
-    if DATE_HEADER_KEY in interesting_headers:
-        interesting_headers['date'] = ''
-
-    # if you're using expires for query string auth, then it trumps date
-    # (and provider.date_header)
-    if expires:
-        interesting_headers['date'] = str(expires)
 
     sorted_header_keys = sorted(interesting_headers.keys())
 
@@ -662,20 +476,11 @@ def canonical_string(method, path, headers, expires=None):
         else:
             buf += "%s\n" % val
 
-    # don't include anything after the first ? in the resource...
-    # unless it is one of the QSA of interest, defined above
+    # remove query parameters
+    # http://docs.aws.amazon.com/AmazonS3/latest/dev/
+    # RESTAuthentication.html#ConstructingTheCanonicalizedResourceElement
     t = path.split('?')
     buf += t[0]
-
-    if len(t) > 1:
-        qsa = t[1].split('&')
-        qsa = [a.split('=', 1) for a in qsa]
-        qsa = [unquote_v(a) for a in qsa if a[0] in qsa_of_interest]
-        if len(qsa) > 0:
-            qsa.sort(cmp=lambda x, y: cmp(x[0], y[0]))
-            qsa = ['='.join(a) for a in qsa]
-            buf += '?'
-            buf += '&'.join(qsa)
 
     return buf
 
@@ -731,20 +536,11 @@ for option in options:
 
 for k, v in ips.iteritems():
     station_metadata_map['ip'].update({k: v})
-print ips
 
-# in_bandwidth = get_config_value('InBandwidths', station)
 in_bandwidth = dict(cfg.items('InBandwidths'))
 for k, v in in_bandwidth.iteritems():
     station_metadata_map['in_bandwidths'].update({k: v})
 
-# out_bandwidth = get_config_value('OutBandwidths', station)
 out_bandwidth = dict(cfg.items('OutBandwidths'))
 for k, v in out_bandwidth.iteritems():
     station_metadata_map['out_bandwidths'].update({k: v})
-
-# print station_metadata_map
-
-# if __name__ == '__main__':
-#     results = get_stations_bandwidth('ap_south_1_client_1')
-#     print results

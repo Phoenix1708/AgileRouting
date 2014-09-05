@@ -2,37 +2,31 @@
 
 class AuthHandler(object):
     """
-    Interface which all Auth handlers need to implement.
+    Interface for picking authentication handlers dynamically at runtime
     """
 
-    capability = []
+    target_aws_services = []
 
     def __init__(self, config):
-        """Constructs the handlers.
-
-        :type config: etc.configuration.Config
-        :param config: configuration.
-        """
 
         self.access_key = config.get('Default', 'AWS_ACCESS_KEY')
         self.secret_key = config.get('Default', 'AWS_SECRET_KEY')
 
         pass
 
-    def add_auth_info(self, http_request):
-        """Invoked to add authentication details to request.
-
-        :type http_request: connection.HTTP.HTTPRequest
-        :param http_request: HTTP request that needs to be authenticated.
+    def sign_request(self, http_request):
+        """ Sign the http request
+        :type http_request: connection.http_communication.HTTPRequest
         """
         pass
 
     @classmethod
-    def is_capable(cls, requested_capability):
-        """Returns true if this handler instance is for
-        the required AWS authentication (e.g Route53 Authentication)
+    def is_for(cls, aws_services):
+        """Returns true if this handler instance is for the required AWS
+        authentication (e.g Route53)
         """
-        for c in requested_capability:
-            if not c in cls.capability:
+        for service in aws_services:
+            if not service in cls.target_aws_services:
                 return False
+
         return True

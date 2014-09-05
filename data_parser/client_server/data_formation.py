@@ -8,22 +8,9 @@ def remove_data(data, category_list, delete):
     if not delete:
         return data, category_list, delete
 
-    # data(:,delete) = [];
-    # category_list(:,delete) = [];
     for i in xrange(len(data)):
-        # for j in delete:
-        #
-        # # fill in the gap between length of data and the target index
-        # if len(data[i]) < j+1 or len(data[i]) == 0:
-        #         for k in range(j+1 - (len(data[i]))):
-        #             data[i].append([])
-
-        # if len(data[i]) < j+1 or len(data[i]) == 0:
-        #     continue
-
         # remove the data
         data[i] = [v[1] for v in enumerate(data[i]) if v[0] not in delete]
-        # data[i].remove(data[i][j])
 
     category_list = [v[1] for v in enumerate(category_list)
                      if v[0] not in delete]
@@ -73,16 +60,8 @@ def format_data(data, period, category_list, cpu_file):
 
     for i in xrange(len(data[2]) - 1):
         end_time = start_time
-        # last_index = -1
-
-        # index for calculating arrival rate
-        # arr_last_index = -1
 
         departure = [a + r * 1000 for a, r in zip(data[2][i], data[3][i])]
-
-        # departure = []
-        # for j in xrange(len(data[2][i])):
-        # departure.append(data[2][i][j] + data[3][i][j] * 1000)
 
         for k in xrange(samples):
 
@@ -102,36 +81,6 @@ def format_data(data, period, category_list, cpu_file):
 
             data[0][i].append(end_time + period)
             end_time += period
-
-            # if no departure time beyond the end
-            # time of current sampling interval
-            # if len(index) < 1:
-            #     # if len(data[5][i]):
-            #     data[4][i].append(0)
-            #     data[5][i].append(0)
-            #     data[6][i].append(0)
-            #     data[7][i].append(0)
-            #     # break
-            #
-            # else:
-            #     if arr_index[0] - arr_last_index - 1 == 0:
-            #         data[7][i].append(0)
-            #
-            #     if index[0] - last_index - 1 == 0:
-            #         data[4][i].append(0)
-            #         data[5][i].append(0)
-            #         data[6][i].append(0)
-            #     else:
-            #         data[4][i].append(
-            #             scipy.mean(data[3][i][last_index+1:index[0]:1]))
-            #         data[5][i].append((index[0] - 1 - last_index)/period*1000)
-            #         data[6][i].append(index[0] - 1 - last_index)
-            #         data[7][i].append(arr_index[0] - 1 - arr_last_index)
-            #         last_index = index[0] - 1
-            #         arr_last_index = arr_index[0] - 1
-            #
-            #     data[0][i].append(end_time + period)
-            #     end_time += period
 
     # Number of samples for each request might not be equal
     max_num_requests = 0
@@ -186,4 +135,4 @@ def format_data(data, period, category_list, cpu_file):
             mean = scipy.mean([cpu[i] for i in indices_found])
             data[1][len(data[1]) - 1].append(mean)
 
-    return [data, category_list]
+    return data

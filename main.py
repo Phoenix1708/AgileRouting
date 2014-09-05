@@ -1,9 +1,10 @@
 from __future__ import division
 import time
 import math
+
 from connection.route_53_connection import Route53Connection
 from data_parser.client_server.server_log_processor import process_server_logs
-from data_parser.optimization import optimise, optimisation
+from data_parser.optimization import optimisation
 from data_parser.s3.process_access_log import process_elb_access_log
 from etc.configuration import setup_logging, cfg
 from models.resource_record_set import ResourceRecordSets
@@ -33,10 +34,10 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
     avg_out_data = []
     service_rates_list = []
     station_latency = []
-    # TODO: start new threads for each client
+
     in_band_dict, out_band_dict = get_stations_bandwidth(client)
-    # Budget 100,000 / 30 / 24 / 60 / interval
-    # Not total budget. Budget for the interval
+    # Budget e.g 100,000 / 30 / 24 / 60 / interval
+    # Not total budget. Abstract Budget for the interval
     budget = 1000
     client_avg_data_in_per_reqs = avg_data_in_per_reqs[client]
     client_avg_data_out_per_reqs = avg_data_out_per_reqs[client]
@@ -59,14 +60,6 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
         service_rates_list.append(service_rates[station])
         station_latency.append(station_latency_dict[station])
 
-    # weights = optimise(num_of_stations=2, total_requests=request_sum,
-    # elb_prices=elb_prices,
-    # avg_data_in_per_reqs=avg_in_data,
-    # avg_data_out_per_reqs=avg_out_data,
-    # in_bandwidths=in_bandwidths,
-    # out_bandwidths=out_bandwidths,
-    # budget=budget, service_rates=service_rates_list,
-    # measurement_interval=measurement_interval, k=1)
     weights = optimisation(num_of_stations=2,
                            total_requests=request_sum,
                            elb_prices=elb_prices,
@@ -91,14 +84,14 @@ def clients_optimisation(avg_data_in_per_reqs, avg_data_out_per_reqs, client,
     route53_conn = Route53Connection()
     zone = route53_conn.get_zone(base_domain)
     elb_records = station_metadata_map['StationELBDNS']
+
     alias_zone_id = {'xueshi-station-1': 'Z32O12XQLNTSW2',
                      'xueshi-station-2': 'Z35SXDOTRQ7X7K'}
 
-    # TODO: This is actually which region of the server user most closet to
     # need to be mapped to IPs
-    clients_regions = {'ap_south_1_client_1': 'ireland',
-                       'us_east_1_client_1': 'nvirginia',
-                       'us_west_1_client_1': 'nvirginia'}
+    clients_regions = {'ap_south_1_client_1': 'ap-southeast-1',
+                       'us_east_1_client_1': 'us-east-1',
+                       'us_west_1_client_1': 'us-west-1'}
 
     identifiers = dict(cfg.items('StationWRRAliasIdentifiers'))
 
@@ -235,7 +228,6 @@ def main():
         # collecting elb data now
         elb_data_queue = data_counting_task.collect_results()
         data_in, data_out = elb_data_queue.get()
-        # TODO: work out total requests sent by client from each region
 
         """ Preparing optimisation parameters """
         # Calculate The "average amount of data involved in each request" for
@@ -282,14 +274,14 @@ def main():
             response_time = \
                 math.pow(service_rate, -1) / (1 - math.pow(service_rate, -1) *
                                               arrival_rate)
-            print '[Debug] predicted current response time of service station '\
+            print '[Debug] predicted current response time of service station ' \
                   '\'%s\': %s' % (station_name, response_time)
 
             log_info(metric_record_file,
                      '[Debug] predicted currentresponse time of service '
                      'station \'%s\': %s' % (station_name, response_time))
 
-        # TODO: needs to be calculated per client
+        # TODO: calculate total requests for each client
         # TODO: if c-sparql could record the source of each requests
         # TODO: things would be much more easier
         total_request_per_client = dict()
@@ -337,18 +329,6 @@ def main():
                 avg_data_out_per_reqs[c1].update(
                     {station_name: avg_data_out_per_req})
 
-                # # convert the amount of data to GB
-                # d_in = float(d_in / math.pow(1024, 3))
-                # d_out = float(d_out / math.pow(1024, 3))
-                #
-                # avg_data_in_per_req = d_in / requests
-                # avg_data_out_per_req = d_out / requests
-                #
-                # avg_data_in_per_reqs.update(
-                # {station_name: avg_data_in_per_req})
-                # avg_data_out_per_reqs.update(
-                # {station_name: avg_data_out_per_req})
-
         # For testing purpose
         info_str = \
             '\n[Debug] total_request: %s\n' \
@@ -362,24 +342,11 @@ def main():
                arrival_rates, service_rates)
 
         print info_str
-        # print '\n[Debug] total_request: %s' % total_request
-        # print '[Debug] avg_data_in_per_reqs: %s' % avg_data_in_per_reqs
-        # print '[Debug] avg_data_out_per_reqs: %s' % avg_data_out_per_reqs
-        # print '[Debug] arrival_rates: %s' % arrival_rates
-        # print '[Debug] service_rates: %s\n' % service_rates
-
         log_info(metric_record_file, info_str)
 
-        # counter += 1
-        # time.sleep(20)
-
         # TODO: Get elb price from config
-
         # ELB pricing
         elb_prices = [0.008, 0.008]
-
-        # Service Level Agreement of response time for each station
-        # sla_response_t = [1.5, 1.5]
 
         # optimise for each client...
         # do optimisation for each client in a new threads
@@ -401,61 +368,7 @@ def main():
         # it takes up to 60 mins for Route 53 record changes to take effect
         time.sleep(60)
 
-        # clients_optimisation(avg_data_in_per_reqs,
-        # avg_data_out_per_reqs, client,
-        # elb_prices, latency_results_dict,
-        # measurement_interval, service_rates,
-        #                      stations, total_request_per_client)
-
 
 if __name__ == "__main__":
     main()
-    # weights = [162, 40]
-    #
-    # route53_conn = Route53Connection()
-    # zone = route53_conn.get_zone(base_domain)
-    #
-    # elb_records = station_metadata_map['StationELBDNS']
-    #
-    # alias_zone_id = {'xueshi-station-1': 'Z32O12XQLNTSW2',
-    # 'xueshi-station-2': 'Z35SXDOTRQ7X7K'}
-    #
-    # # alias_zone_id = {'xueshi-station-1': 'Z3NF1Z3NOM5OY2',
-    # #                  'xueshi-station-2': 'Z3DZXE0Q79N41H'}
-    #
-    # station_region = {'ap_south_1_client_1': 'ireland',
-    # 'us_east_1_client_1': 'nvirginia'}
-    #
-    # identifiers = dict(cfg.items('StationWRRAliasIdentifiers'))
-    #
-    # stations = get_available_stations()
-    # # Since we put optimisation parameter by the order available
-    # # stations the output weights should be in the same order
-    # station_weights = {}
-    # for idx in xrange(len(stations)):
-    # station_weights.update({stations[idx]: weights[idx]})
-    #
-    # rrs = ResourceRecordSets(route53_conn, zone.id)
-    #
-    # client = 'ap_south_1_client_1'
-    #
-    # for s_name, weights_val in station_weights.iteritems():
-    #     alias_dns_name = elb_records[s_name]
-    #     host_zone_id = alias_zone_id[s_name]
-    #
-    #     # client region not server region
-    #     region_name = station_region[client]
-    #     dns_record_name = '%s.%s' % (region_name, base_domain)
-    #     identifier = identifiers[s_name]
-    #     base_record = dict(name=dns_record_name,
-    #                        record_type="A", weight=weights_val,
-    #                        identifier=identifier)
-    #
-    #     new = rrs.add_change(action="UPSERT", **base_record)
-    #     new.set_alias(host_zone_id, unicode(alias_dns_name), False)
-    #
-    # change_result = rrs.commit()
-
-    # log_info(metric_record_file, 'Station weights: %s'
-    #          % station_weights)
     print 'done'

@@ -2,33 +2,6 @@ from __future__ import division
 import math
 import numpy
 
-# def zeros(row, col=None):
-# if not col:
-# return [0] * row
-#
-#     zeros_matrix = []
-#     for r in xrange(row):
-#         zeros_matrix.append([])
-#         for c in xrange(col):
-#             zeros_matrix[r].append(0)
-#             # zeros_matrix[r][c] = 0
-#
-#     return zeros_matrix
-#
-#
-# def ones(row, col=None):
-#     if not col:
-#         return [1] * row
-#
-#     ones_matrix = []
-#     for r in xrange(row):
-#         ones_matrix.append([])
-#         for c in xrange(col):
-#             ones_matrix[r].append([])
-#             ones_matrix[r][c] = 1
-#
-#     return ones_matrix
-
 
 def cell(row, col=None):
     if not col:
@@ -52,11 +25,9 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
         departure = [a + r for a, r in zip(times[k1][0], times[k1][1])]
         times[k1].append(departure)
 
-    # Build array with all events
-    # first column: time
-    # second column: 0 - arrival, 1 - departure
-    # third column: class
-    # fourth column: arrival time (only for departures)
+    # |(time), (arrival-departure-flag), (class), (arrival time)|
+    # |(time), (arrival-departure-flag), (class), (arrival time)|
+    # |(time), (arrival-departure-flag), (class), (arrival time)|
     times_order = cell(4)
     for kk in xrange(k):
         if len(times[kk]) > 2:
@@ -85,9 +56,9 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
 
     # STATE
     # each row corresponds to a current job
-    # first column:  the class of the job
-    # second column: the arrival time
-    # third column: the elapsed service time
+    # |the class of the job, the arrival time, the elapsed service time|
+    # |the class of the job, the arrival time, the elapsed service time|
+    # |the class of the job, the arrival time, the elapsed service time|
     state = numpy.zeros(shape=(0, 3))
 
     t = 0
@@ -106,9 +77,6 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
         time_elapsed = t - t_old
         n = state.shape[0]
 
-        # add to each job in process the service time elapsed (divided
-        # by the portion of the server actually dedicated to it in a PS server
-
         r = min(n, num_of_jobs)
         for j in xrange(r):
             state[j][2] += time_elapsed / r
@@ -116,9 +84,6 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
         if times_order[1][i] == 0:
             next_row = [times_order[2][i], t, 0]
             state = numpy.vstack((state, next_row))
-            # state[0].extend(times_order[2][i])
-            # state[1].append(t)
-            # state[2].append(0)
         else:
             # find job in progress that must leave
             k = 0
@@ -128,10 +93,7 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
             acum[int(state[k][0])][0] += 1
             acum[int(state[k][0])][1] += state[k][2]
 
-            # update state
-            # state = [state(1:k-1,:); state(k+1:end,:)];
             state = numpy.delete(state, k, axis=0)
-            # [s.remove(s[k]) for s in state]
 
         i += 1
         t_old = t
@@ -146,14 +108,11 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
 
         while sum(acum[:, 0]) < sample_size:
             t = times_order[0][i]
-            # print "%.5f" % (round(t, 3))
             time_elapsed = t - t_old
-            # print "%.5f" % (round(time_elapsed, 3))
             n = state.shape[0]
 
             # add to each job in process the service time elapsed (divided
-            # by the portion of the server actually dedicated to it in
-            # a PS server
+            # by the portion of the server actually dedicated to it
             r = min(n, num_of_jobs)
             for j in xrange(r):
                 if r <= num_of_cores:
@@ -164,9 +123,6 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
             if times_order[1][i] == 0:
                 next_row = [times_order[2][i], t, 0]
                 state = numpy.vstack((state, next_row))
-                # state[0].extend(times_order[2][i])
-                # state[1].append(t)
-                # state[2].append(0)
             else:
                 # find job in progress that must leave
                 k = 0
@@ -181,10 +137,7 @@ def _calculate_service_rate(times, num_exp, sample_size, warm_up, num_of_jobs,
                     seperate[int(state[k][0])].append(state[k][2])
                     observed[int(state[k][0])].append(state[k][2])
 
-                # update state
-                # state = [state(1:k-1,:); state(k+1:end,:)];
                 state = numpy.delete(state, k, axis=0)
-                # [s.remove(s[k]) for s in state]
 
             i += 1
             t_old = t
@@ -218,74 +171,6 @@ def calculate_service_rate(num_of_jobs, num_of_cores, data):
                                                           sample_size, warm_up,
                                                           num_of_jobs,
                                                           num_of_cores)
-    # TODO: average ?
     d = mean_service_time.mean(axis=0)
 
     return d[0]
-
-
-# if __name__ == '__main__':
-#     #     # a = numpy.array([1, 2, 3])
-#     #     # b = numpy.array([4, 5, 6])
-#     #     # test = numpy.hstack((a, b))
-#     #     # test[1][0] = 10
-#     one_list = numpy.ones(shape=10)
-#     print one_list.mean(axis=0)
-#     print one_list
-#     print [one * 3 for one in one_list]
-
-    # np_test = numpy.array([[1.22636426]
-    #                        [0.06122791]
-    #                        [0.50653574]
-    #                        [0.10256183]
-    #                        [0.34213803]
-    #                        [2.02279895]])
-    # np_test.mean(axis=0)
-    # test = numpy.ones(shape=(0, 3))
-    #
-    # print test
-    # print test.shape[0]
-    #
-    # # test[0][1] += 3
-    # # print test
-    #
-    # test = numpy.vstack((test, [2, 3, 4]))
-    # test = numpy.vstack((test, [2, 3, 4]))
-    # print test
-    #     test[1][0] = 2
-    #     print test
-    #
-    #     print test.mean(axis=1)
-    #
-    # temp = [a+r for a, r in zip(test[:, 0], test[:, 1])]
-    # print temp
-    #
-    # test1 = numpy.ones(shape=(3, 2))
-    # print test1
-    #
-    # test1[:, 0] = temp
-    # print test1
-
-    # test[0][1] = 5
-    # print test
-    # print max(test[:, 1])
-    # print test.shape[1]
-
-    # print test2
-
-    # k = 5
-    # times = cell(k)
-    # for kk in xrange(k):
-    #     times[kk].extend(cell(2))
-    #     times[kk][0].extend([1,2,3,4,5])
-    #     times[kk][1].extend([5,4,3,2,1])
-    # for i in xrange(len(times)):
-    #     departure = [a + r for a, r in zip(times[i][0], times[i][1])]
-    #     times[i].append(departure)
-    #
-    # print times
-
-
-    # # times.remove(times[0])
-    # [s.remove(s[2]) for s in times]
-    # print times
